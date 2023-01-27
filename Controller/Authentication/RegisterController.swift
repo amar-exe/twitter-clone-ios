@@ -116,22 +116,7 @@ class RegisterController: UIViewController {
         guard let name = nameTextField.text else { return }
         guard let username = usernameTextField.text else { return }
         
-        Auth.auth().createUser(withEmail: email, password: password) { (result, error) in
-            if let error = error {
-                let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertController.Style.alert)
-                alert.addAction(UIAlertAction(title: "Ok", style: UIAlertAction.Style.default, handler: nil))
-                self.present(alert, animated: true, completion: nil)
-                return
-            }
-            
-            guard let uid = result?.user.uid else {
-                return }
-            
-            let values = ["email": email, "username": username, "name": name]
-            
-            Database.database().reference().child("users").child(uid).updateChildValues(values) { (error, ref) in
-            }
-        }
+           
     }
     
 //    helpers
