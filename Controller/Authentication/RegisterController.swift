@@ -6,12 +6,15 @@
 //
 
 import UIKit
+import FirebaseAuth
+import FirebaseDatabase
 
 class RegisterController: UIViewController {
     
 //    properties
     
     private let imagePicker = UIImagePickerController()
+    private var profileImage: UIImage?
     
     private let addPhotoButton: UIButton = {
         let button = UIButton(type: .system)
@@ -68,7 +71,7 @@ class RegisterController: UIViewController {
     
     private let registerButton: UIButton = {
         let button = UIButton(type: .system)
-        button.setTitle("Log in", for: .normal)
+        button.setTitle("Sign Up", for: .normal)
         button.setTitleColor(.twitterBlue, for: .normal)
         button.backgroundColor = .white
         button.heightAnchor.constraint(equalToConstant: 50).isActive = true
@@ -107,7 +110,28 @@ class RegisterController: UIViewController {
     }
     
     @objc private func handleRegister() {
-        print("Handle register")
+        guard let profileImage = profileImage else { return }
+        guard let email = emailTextField.text else { return }
+        guard let password = passwordTextField.text else { return }
+        guard let name = nameTextField.text else { return }
+        guard let username = usernameTextField.text else { return }
+        
+        Auth.auth().createUser(withEmail: email, password: password) { (result, error) in
+            if let error = error {
+                let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertController.Style.alert)
+                alert.addAction(UIAlertAction(title: "Ok", style: UIAlertAction.Style.default, handler: nil))
+                self.present(alert, animated: true, completion: nil)
+                return
+            }
+            
+            guard let uid = result?.user.uid else {
+                return }
+            
+            let values = ["email": email, "username": username, "name": name]
+            
+            Database.database().reference().child("users").child(uid).updateChildValues(values) { (error, ref) in
+            }
+        }
     }
     
 //    helpers
@@ -137,6 +161,7 @@ class RegisterController: UIViewController {
 extension RegisterController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         guard let profileImage = info[.editedImage] as? UIImage else { return }
+        self.profileImage = profileImage
         
         addPhotoButton.layer.cornerRadius = 128 / 2
         addPhotoButton.layer.masksToBounds = true
