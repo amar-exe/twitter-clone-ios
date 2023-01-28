@@ -122,6 +122,15 @@ class RegisterController: UIViewController {
              print("signup successful ")
         }
         
+        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+        }) else { return }
+        
+        guard let tab = window.rootViewController as? MainTabController else { return }
+        
+        tab.authUserAndConfigureUI()
+        
+        self.dismiss(animated: true)
+        
            
     }
     
