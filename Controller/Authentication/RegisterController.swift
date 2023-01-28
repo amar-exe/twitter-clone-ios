@@ -116,6 +116,12 @@ class RegisterController: UIViewController {
         guard let name = nameTextField.text else { return }
         guard let username = usernameTextField.text else { return }
         
+        let credentials = AuthCredentials(email: email, password: password, name: name, username: username, profileImage: profileImage)
+        
+        AuthService.shared.registerUser(credentials: credentials) { error, ref in
+             print("signup successful ")
+        }
+        
            
     }
     

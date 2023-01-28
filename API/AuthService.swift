@@ -6,8 +6,7 @@
 //
 
 import Foundation
-import FirebaseAuth
-import FirebaseDatabase
+import Firebase
 
 struct AuthCredentials {
     let email: String
@@ -20,37 +19,32 @@ struct AuthCredentials {
 struct AuthService {
     static let shared = AuthService()
     
-    func registerUser(credentials: AuthCredentials) {
+    func registerUser(credentials: AuthCredentials, completion: @escaping(Error?, DatabaseReference) -> Void ) {
         let email = credentials.email
         let password = credentials.password
         let name = credentials.name
         let username = credentials.username
-        let profileImage = credentials.profileImage
         
-        guard let imageData = profileImage.jpegData(compressionQuality: 0.3) else { return }
+        guard let imageData = credentials.profileImage.jpegData(compressionQuality: 0.3) else { return }
         let filename = NSUUID().uuidString
         let storageRef = STORAGE_PROFILE_IMAGES.child(filename)
         
-        storageRef.putData(imageData, metadata: nil) { (meta, error) in
-            storageRef.downloadURL { url, error  in
-                guard let profilePicUrl = url?.absoluteString else { return }
+        storageRef.putData(imageData) { meta, error in
+            storageRef.downloadURL { url, error in
+                guard let profileImageUrl = url?.absoluteString else { return }
                 
-                Auth.auth().createUser(withEmail: email, password: password) { (result, error) in
+                Auth.auth().createUser(withEmail: email, password: password) { result, error in
                     if let error = error {
-                        let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertController.Style.alert)
-                        alert.addAction(UIAlertAction(title: "Ok", style: UIAlertAction.Style.default, handler: nil))
-                        self.present(alert, animated: true, completion: nil)
+                        print("error is \(error.localizedDescription)")
                         return
                     }
                     
-                    guard let uid = result?.user.uid else {
-                        print("error u uid")
-                        return }
+                    guard let uid = result?.user.uid else { return }
                     
-                    let values = ["email": email, "username": username, "name": name, "profilePicUrl": profilePicUrl]
+                    let values = ["email" : email, "username" : username, "name" : name, "profileImageUrl" : profileImageUrl]
                     
-                    REF_USERS.child(uid).updateChildValues(values) { (error, ref) in
-                    }
+                    REF_USERS.child(uid).updateChildValues(values, withCompletionBlock: completion)
+                    
                 }
             }
         }
