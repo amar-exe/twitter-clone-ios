@@ -135,12 +135,13 @@ class TweetCell: UICollectionViewCell {
     func configure() {
         guard let tweet = tweet else { return }
         
+        let viewModel = TweetViewModel(tweet: tweet)
+        
         captionLabel.text = tweet.caption
         
-        guard let profilePicUrl = URL(string: tweet.user.profileImageUrl) else { return }
-        profileImageView.sd_setImage(with: profilePicUrl)
+        profileImageView.sd_setImage(with: viewModel.profileImageUrl)
         
-        infoLabel.text = tweet.user.username
+        infoLabel.attributedText = viewModel.userInfoText
     }
     
 }
