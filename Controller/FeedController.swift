@@ -16,7 +16,13 @@ class FeedController: UICollectionViewController {
         didSet {
             configureLeftBarButton()
         }
-    } 
+    }
+    
+    private var tweets = [Tweet]() {
+        didSet {
+            collectionView.reloadData()
+        }
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,7 +38,7 @@ class FeedController: UICollectionViewController {
     
     func fetchTweets() {
         TweetService.shared.fetchTweets { tweets in
-            
+            self.tweets = tweets
         }
     }
     
@@ -69,7 +75,7 @@ class FeedController: UICollectionViewController {
 
 extension FeedController {
     override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return 5
+        return tweets.count
     }
     
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
