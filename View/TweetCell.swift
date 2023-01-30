@@ -136,6 +136,11 @@ class TweetCell: UICollectionViewCell {
         guard let tweet = tweet else { return }
         
         captionLabel.text = tweet.caption
+        
+        guard let profilePicUrl = URL(string: tweet.user.profileImageUrl) else { return }
+        profileImageView.sd_setImage(with: profilePicUrl)
+        
+        infoLabel.text = tweet.user.username
     }
     
 }
