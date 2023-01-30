@@ -8,7 +8,7 @@
 import UIKit
 import SDWebImage
 
-class FeedController: UIViewController {
+class FeedController: UICollectionViewController {
     
 //    MARK: Properties
     
@@ -20,6 +20,9 @@ class FeedController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        self.collectionView!.delegate = self
+        self.collectionView!.dataSource = self
 
         configureUI()
         fetchTweets()
@@ -29,7 +32,7 @@ class FeedController: UIViewController {
     
     func fetchTweets() {
         TweetService.shared.fetchTweets { tweets in
-            print("Tweets are: \(tweets)")
+            
         }
     }
     
@@ -37,6 +40,9 @@ class FeedController: UIViewController {
     
     func configureUI() {
         view.backgroundColor = .white
+        
+        self.collectionView!.register(TweetCell.self, forCellWithReuseIdentifier: TweetCell.reuseIdentifier)
+        collectionView.backgroundColor = .white
         
         let imageView = UIImageView(image: UIImage(named: "twitter_logo_blue"))
         imageView.contentMode = .scaleAspectFit
@@ -57,5 +63,23 @@ class FeedController: UIViewController {
         profileImageView.sd_setImage(with: profilePicUrl)
         
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: profileImageView)
+    }
+}
+
+
+extension FeedController {
+    override func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+        return 5
+    }
+    
+    override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TweetCell.reuseIdentifier, for: indexPath) as! TweetCell
+        return cell
+    }
+}
+
+extension FeedController: UICollectionViewDelegateFlowLayout {
+    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
+        return CGSize(width: view.frame.width, height: 200)
     }
 }
