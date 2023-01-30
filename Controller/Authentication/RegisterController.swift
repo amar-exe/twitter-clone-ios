@@ -116,22 +116,22 @@ class RegisterController: UIViewController {
         guard let name = nameTextField.text else { return }
         guard let username = usernameTextField.text else { return }
         
-        Auth.auth().createUser(withEmail: email, password: password) { (result, error) in
-            if let error = error {
-                let alert = UIAlertController(title: "Error", message: error.localizedDescription, preferredStyle: UIAlertController.Style.alert)
-                alert.addAction(UIAlertAction(title: "Ok", style: UIAlertAction.Style.default, handler: nil))
-                self.present(alert, animated: true, completion: nil)
-                return
-            }
-            
-            guard let uid = result?.user.uid else {
-                return }
-            
-            let values = ["email": email, "username": username, "name": name]
-            
-            Database.database().reference().child("users").child(uid).updateChildValues(values) { (error, ref) in
-            }
+        let credentials = AuthCredentials(email: email, password: password, name: name, username: username, profileImage: profileImage)
+        
+        AuthService.shared.registerUser(credentials: credentials) { error, ref in
+             print("signup successful ")
         }
+        
+        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+        }) else { return }
+        
+        guard let tab = window.rootViewController as? MainTabController else { return }
+        
+        tab.authUserAndConfigureUI()
+        
+        self.dismiss(animated: true)
+        
+           
     }
     
 //    helpers

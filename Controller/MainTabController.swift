@@ -6,31 +6,77 @@
 //
 
 import UIKit
+import Firebase
 
 class MainTabController: UITabBarController {
     
 //    properties
+    var user: User? {
+        didSet {
+            guard let nav = viewControllers?[0] as? UINavigationController else { return }
+            guard let feed = nav.viewControllers.first as? FeedController else { return }
+            
+            feed.user = user
+        }
+    }
+    
     let actionButton: UIButton = {
         let button = UIButton(type: .system)
         button.tintColor = .white
         button.backgroundColor = .twitterBlue
         button.setImage(UIImage(named: "new_tweet"), for: .normal)
-        button.addTarget(MainTabController.self, action: #selector(actionButtonTapped), for: .touchUpInside)
+        button.addTarget(self, action: #selector(actionButtonTapped), for: .touchUpInside)
         return button
     }()
 //      lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        view.backgroundColor = .twitterBlue
+        
+//        logOut()
+        authUserAndConfigureUI()
         updateTabBarAppearance()
         configureViewControllers()
         configureUI()
         
     }
     
+//    MARK: API
+    
+    func fetchUser() {
+        UserService.shared.fetchUser { user in
+            self.user = user
+        }
+    }
+    
+    func authUserAndConfigureUI() {
+        if Auth.auth().currentUser == nil {
+            DispatchQueue.main.async {
+                let vc = UINavigationController(rootViewController: LoginController())
+                vc.modalPresentationStyle = .fullScreen
+                self.present(vc, animated: true)
+            }
+        } else {
+            configureViewControllers()
+            configureUI()
+            fetchUser() 
+        }
+    }
+    
+    func logOut() {
+        do {
+            try Auth.auth().signOut()
+        } catch let error {
+            print("failed to signout with error \(error.localizedDescription)")
+        }
+    }
+    
 //    selectors
     
     @objc func actionButtonTapped() {
-        print(1)
+        let vc =  UINavigationController(rootViewController: UploadTweetController())
+        present(vc, animated: true)
     }
     
 //    helpers
