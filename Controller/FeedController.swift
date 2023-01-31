@@ -23,6 +23,8 @@ class FeedController: UICollectionViewController {
             collectionView.reloadData()
         }
     }
+    
+//    MARK: Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -32,6 +34,12 @@ class FeedController: UICollectionViewController {
 
         configureUI()
         fetchTweets()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        navigationController?.navigationBar.barStyle = .default
+        navigationController?.navigationBar.isHidden = false
     }
     
 //    MARK: API

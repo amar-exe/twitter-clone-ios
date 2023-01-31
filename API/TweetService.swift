@@ -14,7 +14,14 @@ struct TweetService {
         guard let uid = Auth.auth().currentUser?.uid else { return  }
         
         let values = ["uid" : uid, "timestamp" : Int(NSDate().timeIntervalSince1970), "likes" : 0, "retweets" : 0, "caption" : caption] as [String : Any]
-        REF_TWEETS.childByAutoId().updateChildValues(values, withCompletionBlock: completion)
+        
+            let ref = REF_TWEETS.childByAutoId()
+        
+            ref.updateChildValues(values) { err, ref in
+//                user-tweet
+                guard let tweetID = ref.key else { return }
+                REF_USER_TWEETS.child(uid).updateChildValues([tweetID: 1], withCompletionBlock: completion)
+        }
     }
     
     func fetchTweets(completion: @escaping([Tweet]) -> Void) {
