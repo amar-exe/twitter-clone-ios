@@ -13,6 +13,12 @@ class UserCell: UITableViewCell {
     
 //    MARK: Properties
     
+    var user: User? {
+        didSet {
+            configure()
+        }
+    }
+    
     private lazy var profileImageView: UIImageView = {
         let iv = UIImageView()
         iv.contentMode = .scaleAspectFit
@@ -57,6 +63,18 @@ class UserCell: UITableViewCell {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+//    MARK: Lifecycle
+    
+    func configure() {
+        guard let user = user else { return }
+        
+        guard let profilePicUrl = URL(string: user.profileImageUrl) else { return }
+        profileImageView.sd_setImage(with: profilePicUrl)
+        
+        usernameLabel.text = user.username
+        nameLabel.text = user.name
     }
     
 }
