@@ -25,7 +25,6 @@ class UserCell: UITableViewCell {
         iv.clipsToBounds = true
         iv.setDimensions(width: 40, height: 40)
         iv.layer.cornerRadius = 40 / 2
-        iv.backgroundColor = .twitterBlue
         
         return iv
     }()
@@ -33,14 +32,12 @@ class UserCell: UITableViewCell {
     private let usernameLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.boldSystemFont(ofSize: 14)
-        label.text = "username"
         return label
     }()
     
     private let nameLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 14)
-        label.text = "full name"
         return label
     }()
     
@@ -70,8 +67,7 @@ class UserCell: UITableViewCell {
     func configure() {
         guard let user = user else { return }
         
-        guard let profilePicUrl = URL(string: user.profileImageUrl) else { return }
-        profileImageView.sd_setImage(with: profilePicUrl)
+        profileImageView.sd_setImage(with: user.profileImageUrl)
         
         usernameLabel.text = user.username
         nameLabel.text = user.name
