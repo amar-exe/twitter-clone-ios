@@ -29,7 +29,6 @@ struct User {
         if let profileImageUrlString = dictionary["profileImageUrl"] as? String {
             guard let url = URL(string: profileImageUrlString) else { return }
             self.profileImageUrl = url
-            print("profile image url: \(profileImageUrlString)")
         }
         
         
