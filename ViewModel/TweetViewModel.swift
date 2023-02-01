@@ -13,8 +13,7 @@ struct TweetViewModel {
     let user: User
     
     var profileImageUrl: URL? {
-        guard let profilePicUrl = URL(string: user.profileImageUrl) else { return URL(string: "")! }
-        return profilePicUrl
+        return user.profileImageUrl
     }
     
     var timestamp: String {

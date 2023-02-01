@@ -100,8 +100,7 @@ class UploadTweetController: UIViewController {
     }
     
     func configureProfileImage() {
-        guard let profilePicUrl = URL(string: user.profileImageUrl) else { return }
-        profileImageView.sd_setImage(with: profilePicUrl)
+        profileImageView.sd_setImage(with: user.profileImageUrl)
     }
 
 }
