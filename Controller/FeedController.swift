@@ -125,5 +125,15 @@ extension FeedController: TweetCellDelegate {
         navigationController?.pushViewController(controller, animated: true)
     }
     
+    func handleLikeTapped(_ cell: TweetCell) {
+        guard let tweet = cell.tweet else { return }
+        
+        TweetService.shared.likeTweet(forTweet: tweet) { err, ref in
+            cell.tweet?.didLike.toggle()
+            let likes = tweet.didLike ? tweet.likes - 1 : tweet.likes + 1
+            cell.tweet?.likes = likes
+        }
+    }
+    
     
 }
