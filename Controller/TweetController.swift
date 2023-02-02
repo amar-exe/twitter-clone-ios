@@ -12,7 +12,7 @@ class TweetController: UICollectionViewController {
 //    MARK: Properties
     
     private let tweet: Tweet
-    private let actionSheetLauncher: ActionSheetLauncher
+    private var actionSheetLauncher: ActionSheetLauncher!
     private var replies = [Tweet]() {
         didSet {
             collectionView.reloadData()
@@ -23,7 +23,6 @@ class TweetController: UICollectionViewController {
     
     init(tweet: Tweet) {
         self.tweet = tweet
-        self.actionSheetLauncher = ActionSheetLauncher(user: tweet.user)
         super.init(collectionViewLayout: UICollectionViewFlowLayout())
     }
     
@@ -46,6 +45,12 @@ class TweetController: UICollectionViewController {
     }
     
 //    MARK: Helpers
+    
+    fileprivate func showActionSheet(forUser user: User) {
+        actionSheetLauncher = ActionSheetLauncher(user: user)
+        actionSheetLauncher.actionSheetLauncherDelegate = self
+        actionSheetLauncher.show()
+    }
     
     func configureCollectionView() {
         collectionView.backgroundColor = .white
@@ -91,7 +96,24 @@ extension TweetController: UICollectionViewDelegateFlowLayout {
 }
 
 extension TweetController: TweetHeaderDelegate {
+    
     func showActionSheet() {
-        actionSheetLauncher.show()
+        
+        if tweet.user.isCurrentUser {
+            showActionSheet(forUser: tweet.user)
+        } else {
+            UserService.shared.checkIfUserIsFollowed(uid: tweet.user.uid) { isFollowed in
+                var user = self.tweet.user
+                user.isFollowed = isFollowed
+                self.showActionSheet(forUser: user)
+            }
+        }
+        
+    }
+}
+
+extension TweetController: ActionSheetLauncherDelegate {
+    func didSelect(option: ActionSheetOptions) {
+        
     }
 }
