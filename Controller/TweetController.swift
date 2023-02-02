@@ -114,6 +114,20 @@ extension TweetController: TweetHeaderDelegate {
 
 extension TweetController: ActionSheetLauncherDelegate {
     func didSelect(option: ActionSheetOptions) {
-        
+        switch option {
+            
+        case .follow(let user):
+            UserService.shared.followUser(uid: user.uid) { err, ref in
+                print("followed user")
+            }
+        case .unfollow(let user):
+            UserService.shared.unfollowUser(uid: user.uid) { err, ref in
+                print("unfollowed")
+            }
+        case .report:
+            print("report tweet")
+        case .delete:
+            print("delete tweeet")
+        }
     }
 }
