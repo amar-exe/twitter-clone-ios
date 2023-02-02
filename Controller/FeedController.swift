@@ -103,11 +103,22 @@ extension FeedController {
 
 extension FeedController: UICollectionViewDelegateFlowLayout {
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        return CGSize(width: view.frame.width, height: 120)
+        
+        let viewModel = TweetViewModel(tweet: tweets[indexPath.row])
+        let height = viewModel.size(forWidth: view.frame.width).height
+        return CGSize(width: view.frame.width, height: height + 72)
     }
 }
 
 extension FeedController: TweetCellDelegate {
+    func handleReplyTapped(_ cell: TweetCell) {
+        guard let tweet = cell.tweet else { return }
+        let vc = UploadTweetController(user: tweet.user, config: .reply(tweet))
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
+    }
+    
     func handleProfileImageTapped(_ cell: TweetCell) {
         guard let user = cell.tweet?.user else { return }
         let controller = ProfileController(user: user)
