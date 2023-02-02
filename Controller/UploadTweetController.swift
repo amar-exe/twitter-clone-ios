@@ -67,13 +67,6 @@ class UploadTweetController: UIViewController {
 
         configureUI()
         
-        switch config {
-            
-        case .tweet:
-            print("config is tweet")
-        case .reply(_):
-            print("config is reply")
-        }
     }
     
 //    MARK: Selectors
@@ -84,7 +77,7 @@ class UploadTweetController: UIViewController {
     
     @objc func handleUploadTweet() {
         guard let caption = captionTextView.text else { return }
-        TweetService.shared.uploadTweet(caption: caption) { error, ref in
+        TweetService.shared.uploadTweet(caption: caption, type:  config) { error, ref in
             if let error = error {
                 print("Tweet upload failed with error: \(error.localizedDescription)")
                 return
