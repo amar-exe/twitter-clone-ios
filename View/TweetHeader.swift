@@ -7,11 +7,17 @@
 
 import UIKit
 
+protocol TweetHeaderDelegate: AnyObject {
+    func showActionSheet()
+}
+
 class TweetHeader: UICollectionReusableView {
     
     static let reuseIdentifier = "TweetHeader"
     
 //    MARK: Properties
+    
+    weak var tweetHeaderDelegate: TweetHeaderDelegate?
     
     var tweet: Tweet? {
         didSet {
@@ -142,7 +148,7 @@ class TweetHeader: UICollectionReusableView {
     }
     
     @objc func showActionSheet() {
-        
+        tweetHeaderDelegate?.showActionSheet()
     }
     
     @objc func handleCommentTapped() {
