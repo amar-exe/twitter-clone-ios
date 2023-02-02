@@ -86,7 +86,9 @@ struct TweetService {
         REF_TWEETS.child(tweet.tweetID).child("likes").setValue(likes)
         
         if tweet.didLike {
-            
+            REF_USER_LIKES.child(uid).child(tweet.tweetID).removeValue { err, ref in
+                REF_TWEET_LIKES.child(tweet.tweetID).removeValue(completionBlock: completion)
+            }
         } else {
             REF_USER_LIKES.child(uid).updateChildValues([tweet.tweetID : 1]) { err, ref in
                 REF_TWEET_LIKES.child(tweet.tweetID).updateChildValues([uid : 1], withCompletionBlock: completion)
