@@ -7,11 +7,17 @@
 
 import UIKit
 
+protocol NotificationCellDelegate: AnyObject {
+    func didTapProfileImage(_ cell: NotificationCell)
+}
+
 class NotificationCell: UITableViewCell {
     
     static let reuseIdentifier = "NotificationCell"
     
 //    MARK: Properties
+    
+    weak var notificationCellDelegate: NotificationCellDelegate?
     
     var notification: Notification? {
         didSet {
@@ -63,7 +69,7 @@ class NotificationCell: UITableViewCell {
 //    MARK: Selectors
     
     @objc func handleProfileImageTapped() {
-        
+        notificationCellDelegate?.didTapProfileImage(self)
     }
     
 //    MARK: Helpers
