@@ -26,6 +26,12 @@ class ProfileFilterView: UIView {
         return cv
     }()
     
+    private let underlineView: UIView = {
+        let view = UIView()
+        view.backgroundColor = .twitterBlue
+        return view
+    }()
+    
     //    MARK: Lifecycle
     
     override init(frame: CGRect) {
@@ -42,6 +48,11 @@ class ProfileFilterView: UIView {
     
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+    
+    override func layoutSubviews() {
+        addSubview(underlineView)
+        underlineView.anchor(left: leftAnchor, bottom: bottomAnchor, width: frame.width / 3, height: 2)
     }
     
 }
@@ -63,6 +74,12 @@ extension ProfileFilterView: UICollectionViewDataSource {
 
 extension ProfileFilterView: UICollectionViewDelegate {
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        let cell = collectionView.cellForItem(at: indexPath)
+        let xPos = cell? .frame.origin.x ?? 0.0
+        
+        UIView.animate(withDuration: 0.3) {
+            self.underlineView.frame.origin.x = xPos
+        }
         delegate?.filterView(self, didSelect: indexPath)
     }
 }
