@@ -50,6 +50,10 @@ struct EditProfileViewModel {
         return option == .bio
     }
     
+    var shouldHidePlaceholderLabel: Bool {
+        return user.bio != nil
+    }
+    
     var shouldHideTextView: Bool {
         return option != .bio
     }
