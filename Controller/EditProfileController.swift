@@ -7,6 +7,10 @@
 
 import UIKit
 
+protocol EditProfileControllerDelegate: AnyObject {
+    func controller(_ controller: EditProfileController, wantsToUpdate user: User)
+}
+
 class EditProfileController: UITableViewController {
     
 //    MARK: Properties
@@ -14,6 +18,10 @@ class EditProfileController: UITableViewController {
     private var user: User
     private lazy var headerView = EditProfileHeader(user: user)
     private let imagePicker = UIImagePickerController()
+    
+    weak var editProfileControllerDelegate: EditProfileControllerDelegate?
+    
+    private var userInfoChanged = false
     
     private var selectedImage: UIImage? {
         didSet {
@@ -47,10 +55,16 @@ class EditProfileController: UITableViewController {
     }
     
     @objc func handleDone() {
-        dismiss(animated: true)
+        updateUserData()
     }
     
 //    MARK: API
+    
+    func updateUserData() {
+        UserService.shared.saveUserData(user: user) { err, ref in
+            self.editProfileControllerDelegate?.controller(self, wantsToUpdate: self.user)
+        }
+    }
     
 //    MARK: Helpers
     
@@ -85,6 +99,9 @@ class EditProfileController: UITableViewController {
 extension EditProfileController: EditProfileCellDelegate {
     func updateUserInfo(_ cell: EditProfileCell) {
         guard let viewModel = cell.viewModel else { return }
+        
+        userInfoChanged = true
+        navigationItem.rightBarButtonItem?.isEnabled = true
         
         switch viewModel.option {
             
