@@ -11,14 +11,22 @@ class EditProfileController: UITableViewController {
     
 //    MARK: Properties
     
-    private let user: User
+    private var user: User
     private lazy var headerView = EditProfileHeader(user: user)
+    private let imagePicker = UIImagePickerController()
+    
+    private var selectedImage: UIImage? {
+        didSet {
+            headerView.profileImageView.image = selectedImage
+        }
+    }
     
 //    MARK: Lifecycle
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        configureImagePicker()
         configureNavigationBar()
         configureTableView()
     }
@@ -46,6 +54,11 @@ class EditProfileController: UITableViewController {
     
 //    MARK: Helpers
     
+    func configureImagePicker() {
+        imagePicker.delegate = self
+        imagePicker.allowsEditing = true
+    }
+    
     func configureNavigationBar() {
         navigationController?.navigationBar.barStyle = .black
         navigationController?.navigationBar.isTranslucent = false
@@ -69,6 +82,24 @@ class EditProfileController: UITableViewController {
     
 }
 
+extension EditProfileController: EditProfileCellDelegate {
+    func updateUserInfo(_ cell: EditProfileCell) {
+        guard let viewModel = cell.viewModel else { return }
+        
+        switch viewModel.option {
+            
+        case .fullname:
+            guard let fullname = cell.infoTextField.text else { return }
+            user.name = fullname
+        case .username:
+            guard let username = cell.infoTextField.text else { return }
+            user.username = username
+        case .bio:
+            user.bio = cell.bioTextView.text
+        }
+    }
+}
+
 extension EditProfileController {
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return EditProfileOptions.allCases.count
@@ -77,6 +108,7 @@ extension EditProfileController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: EditProfileCell.reuseIdentifier, for: indexPath) as! EditProfileCell
         
+        cell.editProfileCellDelegate = self
         guard let option = EditProfileOptions(rawValue: indexPath.row) else { return cell }
         cell.viewModel = EditProfileViewModel(user: user, options: option)
         
@@ -94,6 +126,16 @@ extension EditProfileController {
 
 extension EditProfileController: EditProfileHeaderDelegate {
     func didTapChangeProfilePhoto() {
+        present(imagePicker, animated: true)
+    }
+}
+
+extension EditProfileController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+    func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         
+        guard let image = info[.editedImage] as? UIImage else { return }
+        self.selectedImage = image
+        
+        dismiss(animated: true)
     }
 }

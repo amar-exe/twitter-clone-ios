@@ -7,11 +7,17 @@
 
 import UIKit
 
+protocol EditProfileCellDelegate: AnyObject {
+    func updateUserInfo(_ cell: EditProfileCell)
+}
+
 class EditProfileCell: UITableViewCell {
     
     static let reuseIdentifier = "EditProfileCell"
     
 //    MARK: Properties
+    
+    weak var editProfileCellDelegate: EditProfileCellDelegate?
     
     var viewModel: EditProfileViewModel? {
         didSet {
@@ -60,6 +66,8 @@ class EditProfileCell: UITableViewCell {
         
         addSubview(bioTextView)
         bioTextView.anchor(top: topAnchor, left: titleLabel.rightAnchor, bottom: bottomAnchor, right: rightAnchor, paddingTop: 4, paddingLeft: 16, paddingRight: 8)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(handleUpdateUserInfo), name: UITextView.textDidEndEditingNotification, object: nil)
     }
     
     required init?(coder: NSCoder) {
@@ -69,7 +77,7 @@ class EditProfileCell: UITableViewCell {
 //    MARK: Selectors
     
     @objc func handleUpdateUserInfo() {
-        
+        editProfileCellDelegate?.updateUserInfo(self)
     }
     
 //    MARK: Helpers
