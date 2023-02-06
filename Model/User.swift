@@ -16,6 +16,7 @@ struct User {
     let uid: String
     var isFollowed = false
     var stats: UserRelationStats?
+    var bio: String?
     
     var isCurrentUser: Bool {
         return Auth.auth().currentUser?.uid == uid
@@ -27,6 +28,7 @@ struct User {
         self.name = dictionary["name"] as? String ?? ""
         self.username = dictionary["username"] as? String ?? ""
         self.email = dictionary["email"] as? String ?? ""
+        self.bio = dictionary["bio"] as? String ?? ""
         
         if let profileImageUrlString = dictionary["profileImageUrl"] as? String {
             guard let url = URL(string: profileImageUrlString) else { return }

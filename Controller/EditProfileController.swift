@@ -77,6 +77,9 @@ extension EditProfileController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: EditProfileCell.reuseIdentifier, for: indexPath) as! EditProfileCell
         
+        guard let option = EditProfileOptions(rawValue: indexPath.row) else { return cell }
+        cell.viewModel = EditProfileViewModel(user: user, options: option)
+        
         return cell
     }
 }
