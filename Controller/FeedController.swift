@@ -47,7 +47,7 @@ class FeedController: UICollectionViewController {
     func fetchTweets() {
         collectionView.refreshControl?.beginRefreshing()
         TweetService.shared.fetchTweets { tweets in
-            self.tweets.sorted(by: { $0.timestamp > $1.timestamp })
+            self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
             self.checkIfUserLikedTweets()
             
             self.collectionView.refreshControl?.endRefreshing()
@@ -126,6 +126,8 @@ extension FeedController {
         
         cell.delegate = self
         cell.tweet = tweets[indexPath.row]
+        print("DEBUG: Tweet user: \(tweets[indexPath.row].user)")
+        print("DEBUG: Tweet is: \(tweets[indexPath.row])")
         
         return cell
     }

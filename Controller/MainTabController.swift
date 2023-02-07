@@ -80,19 +80,17 @@ class MainTabController: UITabBarController {
     
     @objc func actionButtonTapped() {
         
-        var controller = SearchController(config: .messages)
-        
         switch buttonConfig {
         case .tweet:
             guard let user = user else { return }
             let controller = UploadTweetController(user: user, config: .tweet)
+            let nav =  UINavigationController(rootViewController: controller)
+            present(nav, animated: true)
         case .message:
-            controller = SearchController(config: .messages)
+            let controller = SearchController(config: .messages)
+            let nav =  UINavigationController(rootViewController: controller)
+            present(nav, animated: true)
         }
-        
-        let nav =  UINavigationController(rootViewController: controller)
-        present(nav, animated: true)
-        
         
     }
     
