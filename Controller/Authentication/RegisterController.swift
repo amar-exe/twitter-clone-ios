@@ -54,7 +54,12 @@ class RegisterController: UIViewController {
         return view
     }()
     
-    private let emailTextField: UITextField = Utilities().textField(withPlaceholder: "Email")
+    private let emailTextField: UITextField = {
+        let tf = Utilities().textField(withPlaceholder: "Email")
+        tf.keyboardType = .emailAddress
+        tf.autocapitalizationType = .none
+        return tf
+    }()
     
     private let passwordTextField: UITextField = {
         let tf = Utilities().textField(withPlaceholder: "Password")
@@ -66,6 +71,7 @@ class RegisterController: UIViewController {
     
     private let usernameTextField: UITextField = {
         let tf = Utilities().textField(withPlaceholder: "Username")
+        tf.autocapitalizationType = .none
         return tf
     }()
     
