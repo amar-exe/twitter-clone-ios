@@ -8,7 +8,12 @@
 import Foundation
 import Firebase
 
-struct User {
+struct User: Equatable {
+    
+    static func == (lhs: User, rhs: User) -> Bool {
+        return lhs.uid == rhs.uid
+    }
+    
     var name: String
     var username: String
     let email: String

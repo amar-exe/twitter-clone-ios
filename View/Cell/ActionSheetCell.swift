@@ -34,6 +34,10 @@ class ActionSheetCell: UITableViewCell {
         return label
     }()
     
+    func getTitleLabelText() -> String {
+        return titleLabel.text ?? ""
+    }
+    
 //    MARK: Lifecycle
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
