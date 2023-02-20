@@ -42,6 +42,10 @@ class TweetCell: UICollectionViewCell {
         return iv
     }()
     
+    func getprofileImageViewUrl() -> URL? {
+        return profileImageView.sd_imageURL
+    }
+    
     private let replyLabel: ActiveLabel = {
         let label = ActiveLabel()
         label.textColor = .lightGray
@@ -58,6 +62,10 @@ class TweetCell: UICollectionViewCell {
         label.hashtagColor = .twitterBlue
         return label
     }()
+    
+    func getCaptionLabelText() -> String {
+        return captionLabel.text ?? ""
+    }
     
     private lazy var commentButton: UIButton = {
         let button = createButton(withImageName: "comment")
@@ -77,6 +85,10 @@ class TweetCell: UICollectionViewCell {
         return button
     }()
     
+    func getLikeButtonImage() -> UIImage {
+        return likeButton.image(for: .normal) ?? UIImage()
+    }
+    
     private lazy var shareButton: UIButton = {
         let button = createButton(withImageName: "share")
         button.addTarget(self, action: #selector(handleShareTapped), for: .touchUpInside)
@@ -84,6 +96,10 @@ class TweetCell: UICollectionViewCell {
     }()
     
     private let infoLabel = UILabel()
+    
+    func getInfoLabelAttributedText() -> NSAttributedString {
+        return infoLabel.attributedText ?? NSAttributedString(string: "")
+    }
     
 //    MARK: Lifecycle
     

@@ -92,6 +92,13 @@ class RegisterController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        emailTextField.accessibilityIdentifier = "emailOnRegisterTextField"
+        nameTextField.accessibilityIdentifier = "nameOnRegisterTextField"
+        usernameTextField.accessibilityIdentifier = "usernameOnRegisterTextField"
+        passwordTextField.accessibilityIdentifier = "passwordOnRegisterTextField"
+        registerButton.accessibilityIdentifier = "registerButton"
+        
+        
         configureUI()
     }
     
@@ -147,6 +154,9 @@ class RegisterController: UIViewController {
         
         imagePicker.delegate = self
         imagePicker.allowsEditing = true
+        let navigationBar = imagePicker.navigationBar
+        let doneButton = navigationBar.topItem?.rightBarButtonItem
+        doneButton?.accessibilityIdentifier = "ChooseButton"
         
         view.addSubview(addPhotoButton)
         addPhotoButton.centerX(inView: view, topAnchor: view.safeAreaLayoutGuide.topAnchor, paddingTop: 64)

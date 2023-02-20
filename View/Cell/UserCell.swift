@@ -29,17 +29,29 @@ class UserCell: UITableViewCell {
         return iv
     }()
     
+    func getProfileImage() -> UIImage {
+        return profileImageView.image ?? UIImage()
+    }
+    
     private let usernameLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.boldSystemFont(ofSize: 14)
         return label
     }()
     
+    func getUsernameLabelText() -> String {
+        return usernameLabel.text ?? ""
+    }
+    
     private let nameLabel: UILabel = {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 14)
         return label
     }()
+    
+    func getNameLabelText() -> String {
+        return nameLabel.text ?? ""
+    }
     
 //    MARK: Lifecycle
     
