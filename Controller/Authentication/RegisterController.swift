@@ -8,12 +8,12 @@
 import UIKit
 import FirebaseAuth
 import FirebaseDatabase
+import CropViewController
 
 class RegisterController: UIViewController {
     
 //    properties
     
-    private let imagePicker = UIImagePickerController()
     private var profileImage: UIImage?
     
     private let addPhotoButton: UIButton = {
@@ -119,7 +119,10 @@ class RegisterController: UIViewController {
     }
     
     @objc private func addPhoto() {
-        present(imagePicker, animated: true, completion: nil)
+        let picker = UIImagePickerController()
+        picker.sourceType = .photoLibrary
+        picker.delegate = self
+        present(picker, animated: true)
     }
     
     @objc private func handleRegister() {
@@ -152,12 +155,6 @@ class RegisterController: UIViewController {
     func configureUI() {
         view.backgroundColor = .twitterBlue
         
-        imagePicker.delegate = self
-        imagePicker.allowsEditing = true
-        let navigationBar = imagePicker.navigationBar
-        let doneButton = navigationBar.topItem?.rightBarButtonItem
-        doneButton?.accessibilityIdentifier = "ChooseButton"
-        
         view.addSubview(addPhotoButton)
         addPhotoButton.centerX(inView: view, topAnchor: view.safeAreaLayoutGuide.topAnchor, paddingTop: 64)
         addPhotoButton.setDimensions(width: 128, height: 128)
@@ -176,9 +173,41 @@ class RegisterController: UIViewController {
 
 extension RegisterController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-        guard let profileImage = info[.editedImage] as? UIImage else { return }
-        self.profileImage = profileImage
+        guard let profileImage = info[.originalImage] as? UIImage else { return }
+        picker.dismiss(animated: true)
         
+        showCrop(image: profileImage)
+    }
+    
+    func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+        picker.dismiss(animated: true)
+    }
+}
+
+extension RegisterController: CropViewControllerDelegate {
+    
+    func showCrop(image: UIImage) {
+        let vc = CropViewController(croppingStyle: .circular, image: image)
+        vc.aspectRatioPreset = .presetSquare
+        vc.aspectRatioLockEnabled = false
+        vc.toolbarPosition = .bottom
+        vc.doneButtonTitle = "Continue"
+        vc.doneButtonColor = .twitterBlue
+        vc.cancelButtonTitle = "Cancel"
+        vc.cancelButtonColor = .systemRed
+        vc.delegate = self
+        
+        present(vc, animated: true)
+    }
+    
+    func cropViewController(_ cropViewController: CropViewController, didFinishCancelled cancelled: Bool) {
+        cropViewController.dismiss(animated: true)
+    }
+    
+    func cropViewController(_ cropViewController: CropViewController, didCropToImage image: UIImage, withRect cropRect: CGRect, angle: Int) {
+        cropViewController.dismiss(animated: true)
+        
+        self.profileImage = image
         addPhotoButton.layer.cornerRadius = 128 / 2
         addPhotoButton.layer.masksToBounds = true
         addPhotoButton.imageView?.contentMode = .scaleAspectFill
@@ -186,8 +215,6 @@ extension RegisterController: UIImagePickerControllerDelegate, UINavigationContr
         addPhotoButton.layer.borderColor = UIColor.white.cgColor
         addPhotoButton.layer.borderWidth = 3
         
-        self.addPhotoButton.setImage(profileImage.withRenderingMode(.alwaysOriginal), for: .normal)
-        
-        dismiss(animated: true)
+        self.addPhotoButton.setImage(profileImage?.withRenderingMode(.alwaysOriginal), for: .normal)
     }
 }
