@@ -6,15 +6,17 @@
 //
 
 import UIKit
+import SnapKit
 import FirebaseAuth
 import FirebaseDatabase
 import CropViewController
 
 class RegisterController: UIViewController {
     
-//    properties
+    //    properties
     
     private var profileImage: UIImage?
+    private var areFieldsValid = false
     
     private let addPhotoButton: UIButton = {
         let button = UIButton(type: .system)
@@ -87,11 +89,11 @@ class RegisterController: UIViewController {
         return button
     }()
     
-//    lifecycle
-
+    //    lifecycle
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        
         emailTextField.accessibilityIdentifier = "emailOnRegisterTextField"
         nameTextField.accessibilityIdentifier = "nameOnRegisterTextField"
         usernameTextField.accessibilityIdentifier = "usernameOnRegisterTextField"
@@ -106,13 +108,13 @@ class RegisterController: UIViewController {
         super.viewWillAppear(animated)
         navigationController?.setNavigationBarHidden(true, animated: animated)
     }
-
+    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         navigationController?.setNavigationBarHidden(false, animated: animated)
     }
     
-//    selectors
+    //    selectors
     
     @objc private func goToLogin() {
         navigationController?.popViewController(animated: true)
@@ -126,16 +128,20 @@ class RegisterController: UIViewController {
     }
     
     @objc private func handleRegister() {
+        validateFields()
+        if !areFieldsValid {
+            return
+        }
         guard let profileImage = profileImage else { return }
-        guard let email = emailTextField.text else { return }
+        guard let email = emailTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
         guard let password = passwordTextField.text else { return }
-        guard let name = nameTextField.text else { return }
-        guard let username = usernameTextField.text?.lowercased() else { return }
+        guard let name = nameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+        guard let username = usernameTextField.text?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else { return }
         
         let credentials = AuthCredentials(email: email, password: password, name: name, username: username, profileImage: profileImage)
         
         AuthService.shared.registerUser(credentials: credentials) { error, ref in
-             print("signup successful ")
+            print("signup successful ")
         }
         
         guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
@@ -146,12 +152,78 @@ class RegisterController: UIViewController {
         tab.authUserAndConfigureUI()
         
         self.dismiss(animated: true)
-        
-           
     }
     
-//    helpers
-
+    private func validateFields() {
+        
+        //        MARK: Profile Image Checks
+        guard let _ = profileImage else {
+            presentUIAlertController(withMessage: "You need to add a profile picture!")
+            return
+        }
+        
+        //        MARK: Email checks
+        guard let emailText = emailTextField.text else {
+            presentUIAlertController(withMessage: "You need to add a email address!")
+            return
+        }
+        if emailText.isEmpty {
+            presentUIAlertController(withMessage: "You need to add a email address!")
+            return
+        }
+        if !emailText.isValidEmail() {
+            presentUIAlertController(withMessage: "You need to enter a valid email address!")
+            return
+        }
+        
+        
+        //        MARK: Password checks
+        guard let passwordText = passwordTextField.text else {
+            presentUIAlertController(withMessage: "You need to add a password!")
+            return
+        }
+        if passwordText.isEmpty {
+            presentUIAlertController(withMessage: "You need to add a password!")
+            return
+        }
+        if passwordText.count < 6 {
+            presentUIAlertController(withMessage: "Your password needs to be longer than 5 characters!")
+            return
+        }
+        
+        //        MARK: Name checks
+        guard let nameText = nameTextField.text else {
+            presentUIAlertController(withMessage: "You need to add a name!")
+            return
+        }
+        if nameText.isEmpty {
+            presentUIAlertController(withMessage: "You need to add a name!")
+            return
+        }
+        
+        //        MARK: Username checks
+        guard let usernameText = usernameTextField.text else {
+            presentUIAlertController(withMessage: "You need to add a username!")
+            return
+        }
+        if usernameText.isEmpty {
+            presentUIAlertController(withMessage: "You need to add a username!")
+            return
+        }
+        
+        
+        areFieldsValid = true
+        return
+    }
+    
+    private func presentUIAlertController(withMessage message: String) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Ok", style: .default))
+        present(alert, animated: true)
+    }
+    
+    //    helpers
+    
     func configureUI() {
         view.backgroundColor = .twitterBlue
         
@@ -168,7 +240,7 @@ class RegisterController: UIViewController {
         view.addSubview(alreadyHaveAccountButton)
         alreadyHaveAccountButton.anchor(left: view.leftAnchor, bottom: view.safeAreaLayoutGuide.bottomAnchor, right: view.rightAnchor, paddingLeft: 40, paddingBottom: 16, paddingRight: 16)
     }
-
+    
 }
 
 extension RegisterController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {

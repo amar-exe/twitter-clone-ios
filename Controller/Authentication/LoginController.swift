@@ -11,6 +11,8 @@ class LoginController: UIViewController {
     
 //    properties
     
+    private var areFieldsValid = false
+    
     private let logoImageView: UIImageView = {
         let imageView = UIImageView()
         imageView.contentMode = .scaleAspectFit
@@ -85,12 +87,16 @@ class LoginController: UIViewController {
     }
     
     @objc private func handleLogin() {
+        validateFields()
+        if !areFieldsValid {
+            return
+        }
         guard let email = emailTextField.text else { return }
         guard let password = passwordTextField.text else { return }
         
         AuthService.shared.logUserIn(withEmail: email, password: password) { Result, error in
             if let error = error {
-                print("error logging in: \(error.localizedDescription)")
+                self.presentUIAlertController(withMessage: error.localizedDescription)
                 return
             }
             
@@ -103,6 +109,48 @@ class LoginController: UIViewController {
             
             self.dismiss(animated: true)
         }
+    }
+    
+    private func validateFields() {
+        
+        //        MARK: Email checks
+        guard let emailText = emailTextField.text else {
+            presentUIAlertController(withMessage: "You need to enter an email address!")
+            return
+        }
+        if emailText.isEmpty {
+            presentUIAlertController(withMessage: "You need to enter an email address!")
+            return
+        }
+        if !emailText.isValidEmail() {
+            presentUIAlertController(withMessage: "You need to enter a valid email address!")
+            return
+        }
+        
+        
+        //        MARK: Password checks
+        guard let passwordText = passwordTextField.text else {
+            presentUIAlertController(withMessage: "You need to enter a password!")
+            return
+        }
+        if passwordText.isEmpty {
+            presentUIAlertController(withMessage: "You need to enter a password!")
+            return
+        }
+        if passwordText.count < 6 {
+            presentUIAlertController(withMessage: "Your password needs to be longer than 5 characters!")
+            return
+        }
+        
+        
+        areFieldsValid = true
+        return
+    }
+    
+    private func presentUIAlertController(withMessage message: String) {
+        let alert = UIAlertController(title: nil, message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "Ok", style: .default))
+        present(alert, animated: true)
     }
     
     
