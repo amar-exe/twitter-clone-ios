@@ -67,7 +67,8 @@ class ProfileController: UICollectionViewController {
     
     func fetchTweets() {
         TweetService.shared.fetchTweets(forUser: user) { tweets in
-            self.tweets = tweets
+            self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
+            self.checkIfUserLikedTweets()
             self.collectionView.reloadData()
         }
     }
@@ -139,6 +140,7 @@ extension ProfileController {
     override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         let cell = collectionView.dequeueReusableCell(withReuseIdentifier: TweetCell.reuseIdentifier, for: indexPath) as! TweetCell
         cell.tweet = currentDataSource[indexPath.row]
+        cell.delegate = self
         return cell
     }
 }
@@ -225,4 +227,80 @@ extension ProfileController: EditProfileControllerDelegate {
         self.user = user
         self.collectionView.reloadData()
     }
+}
+
+extension ProfileController {
+    func checkIfUserLikedTweets() {
+        self.currentDataSource.forEach { tweet in
+            TweetService.shared.checkIfUserLikedTweet(tweet) { didLike in
+                guard didLike == true else { return }
+                if let index = self.currentDataSource.firstIndex(where: { $0.tweetID == tweet.tweetID }) {
+                    self.setLike(forIndex: index)
+                    self.collectionView.reloadData()
+                }
+            }
+        }
+    }
+    
+    func setLike(forIndex index: Int) {
+        switch selectedFilter {
+        case .tweets:
+            self.tweets[index].didLike = true
+        case .replies:
+            self.replies[index].didLike = true
+        case .likes:
+            self.likedTweets[index].didLike = true
+        }
+    }
+}
+
+extension ProfileController: TweetCellDelegate {
+    func handleShareTapped(_ cell: TweetCell) {
+        guard let tweetText = cell.tweet?.caption else { return }
+        
+        let shareSheetVC = UIActivityViewController(
+            activityItems: [
+                tweetText
+            ], applicationActivities: nil)
+        
+        present(shareSheetVC, animated: true)
+    }
+    
+    func handleFetchUser(withUsername username: String) {
+        UserService.shared.fetchUser(withUsername: username) { user in
+            let controller = ProfileController(user: user)
+            self.navigationController?.pushViewController(controller, animated: true )
+        }
+    }
+    
+    func handleReplyTapped(_ cell: TweetCell) {
+        guard let tweet = cell.tweet else { return }
+        let vc = UploadTweetController(user: tweet.user, config: .reply(tweet))
+        let nav = UINavigationController(rootViewController: vc)
+        nav.modalPresentationStyle = .fullScreen
+        present(nav, animated: true)
+    }
+    
+    func handleProfileImageTapped(_ cell: TweetCell) {
+        guard let user = cell.tweet?.user else { return }
+        let controller = ProfileController(user: user)
+        navigationController?.pushViewController(controller, animated: true)
+    }
+    
+    func handleLikeTapped(_ cell: TweetCell) {
+        guard let tweet = cell.tweet else { return }
+        
+        TweetService.shared.likeTweet(forTweet: tweet) { err, ref in
+            cell.tweet?.didLike.toggle()
+            let likes = tweet.didLike ? tweet.likes - 1 : tweet.likes + 1
+            cell.tweet?.likes = likes
+            
+            guard !tweet.didLike else { return }
+            NotificationService.shared.uploadNotification(toUser: tweet.user,
+                                                          type: .like,
+                                                          tweetID: tweet.tweetID)
+        }
+    }
+    
+    
 }

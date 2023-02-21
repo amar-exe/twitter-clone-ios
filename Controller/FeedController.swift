@@ -49,7 +49,6 @@ class FeedController: UICollectionViewController {
         TweetService.shared.fetchTweets { tweets in
             self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
             self.checkIfUserLikedTweets()
-            
             self.collectionView.refreshControl?.endRefreshing()
         }
     }
@@ -148,6 +147,17 @@ extension FeedController: UICollectionViewDelegateFlowLayout {
 }
 
 extension FeedController: TweetCellDelegate {
+    func handleShareTapped(_ cell: TweetCell) {
+        guard let tweetText = cell.tweet?.caption else { return }
+        
+        let shareSheetVC = UIActivityViewController(
+            activityItems: [
+                tweetText
+            ], applicationActivities: nil)
+        
+        present(shareSheetVC, animated: true)
+    }
+    
     func handleFetchUser(withUsername username: String) {
         UserService.shared.fetchUser(withUsername: username) { user in
             let controller = ProfileController(user: user)
