@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import CropViewController
 
 protocol EditProfileControllerDelegate: AnyObject {
     func controller(_ controller: EditProfileController, wantsToUpdate user: User)
@@ -19,7 +20,6 @@ class EditProfileController: UITableViewController {
     private var user: User
     private lazy var headerView = EditProfileHeader(user: user)
     private let footerView = EditProfileFooter()
-    private let imagePicker = UIImagePickerController()
     
     weak var editProfileControllerDelegate: EditProfileControllerDelegate?
     
@@ -39,7 +39,6 @@ class EditProfileController: UITableViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        configureImagePicker()
         configureNavigationBar()
         configureTableView()
     }
@@ -95,11 +94,6 @@ class EditProfileController: UITableViewController {
     }
     
 //    MARK: Helpers
-    
-    func configureImagePicker() {
-        imagePicker.delegate = self
-        imagePicker.allowsEditing = true
-    }
     
     func configureNavigationBar() {
         navigationController?.navigationBar.barStyle = .black
@@ -174,17 +168,46 @@ extension EditProfileController {
 
 extension EditProfileController: EditProfileHeaderDelegate {
     func didTapChangeProfilePhoto() {
-        present(imagePicker, animated: true)
+        let picker = UIImagePickerController()
+        picker.sourceType = .photoLibrary
+        picker.delegate = self
+        present(picker, animated: true)
     }
 }
 
 extension EditProfileController: UIImagePickerControllerDelegate, UINavigationControllerDelegate {
     func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
         
-        guard let image = info[.editedImage] as? UIImage else { return }
-        self.selectedImage = image
+        guard let profileImage = info[.originalImage] as? UIImage else { return }
+        picker.dismiss(animated: true)
+        showCrop(image: profileImage)
         
-        dismiss(animated: true)
+    }
+}
+
+extension EditProfileController: CropViewControllerDelegate {
+    
+    func showCrop(image: UIImage) {
+        let vc = CropViewController(croppingStyle: .circular, image: image)
+        vc.aspectRatioPreset = .presetSquare
+        vc.aspectRatioLockEnabled = false
+        vc.toolbarPosition = .bottom
+        vc.doneButtonTitle = "Continue"
+        vc.doneButtonColor = .twitterBlue
+        vc.cancelButtonTitle = "Cancel"
+        vc.cancelButtonColor = .systemRed
+        vc.delegate = self
+        
+        present(vc, animated: true)
+    }
+    
+    func cropViewController(_ cropViewController: CropViewController, didFinishCancelled cancelled: Bool) {
+        cropViewController.dismiss(animated: true)
+    }
+    
+    func cropViewController(_ cropViewController: CropViewController, didCropToImage image: UIImage, withRect cropRect: CGRect, angle: Int) {
+        cropViewController.dismiss(animated: true)
+        self.selectedImage = image
     }
 }
 

@@ -12,6 +12,11 @@ class FeedController: UICollectionViewController {
     
 //    MARK: Properties
     
+    let itemsPerPage: UInt = 3
+    var pageNum = 0
+    
+    private var backgroundView: UIView!
+    
     var user: User? {
         didSet {
             configureLeftBarButton()
@@ -21,6 +26,8 @@ class FeedController: UICollectionViewController {
     private var tweets = [Tweet]() {
         didSet {
             collectionView.reloadData()
+            backgroundView.isHidden = !tweets.isEmpty
+            collectionView.refreshControl?.endRefreshing()
         }
     }
     
@@ -34,24 +41,40 @@ class FeedController: UICollectionViewController {
 
         configureUI()
         fetchTweets()
+        
+        configureTableBackgroundView()
+        
+        collectionView.backgroundView = backgroundView
     }
     
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         navigationController?.navigationBar.barStyle = .default
         navigationController?.navigationBar.isHidden = false
+        
+        fetchTweets()
     }
     
 //    MARK: API
     
+//    func fetchTweets() {
+//        collectionView.refreshControl?.beginRefreshing()
+//        TweetService.shared.fetchTweets { tweets in
+//            self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
+//            self.checkIfUserLikedTweets()
+//            self.collectionView.refreshControl?.endRefreshing()
+//        }
+//        collectionView.refreshControl?.endRefreshing()
+//    }
+    
     func fetchTweets() {
         collectionView.refreshControl?.beginRefreshing()
-        TweetService.shared.fetchTweets { tweets in
+        TweetService.shared.fetchTweets(limit: itemsPerPage, completion: { tweets in
             self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
             self.checkIfUserLikedTweets()
-            
             self.collectionView.refreshControl?.endRefreshing()
-        }
+        })
+        collectionView.refreshControl?.endRefreshing()
     }
     
     func checkIfUserLikedTweets() {
@@ -69,6 +92,7 @@ class FeedController: UICollectionViewController {
 //    MARK: Selectors
     
     @objc func handleRefresh() {
+        tweets = []
         fetchTweets()
     }
     
@@ -80,6 +104,21 @@ class FeedController: UICollectionViewController {
     }
     
 //    MARK: Helpers
+    
+    func configureTableBackgroundView() {
+        backgroundView = UIView(frame: collectionView.bounds)
+        backgroundView.backgroundColor = .white // set the background color
+        let messageLabel = UILabel()
+        messageLabel.numberOfLines = 2
+        messageLabel.text = "No tweets in your feed yet!\nTry following someone" // set the message to display
+        messageLabel.textAlignment = .center
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+        backgroundView.addSubview(messageLabel)
+        NSLayoutConstraint.activate([
+            messageLabel.centerXAnchor.constraint(equalTo: backgroundView.centerXAnchor),
+            messageLabel.centerYAnchor.constraint(equalTo: backgroundView.centerYAnchor),
+        ])
+    }
     
     func configureUI() {
         view.backgroundColor = .white
@@ -132,6 +171,31 @@ extension FeedController {
         return cell
     }
     
+    override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let contentOffset = scrollView.contentOffset.y
+        let maximumOffset = scrollView.contentSize.height - scrollView.frame.size.height
+        let deltaOffset = maximumOffset - contentOffset
+        
+        if deltaOffset <= 0 {
+            pageNum += 1
+//            fetchTweets(page: currentPage) { fetchedTweets in
+//                self.tweets.append(contentsOf: fetchedTweets)
+//                self.collectionView.reloadData()
+//            }
+            
+            guard var lastTweet = tweets.last else { return }
+        
+            
+            TweetService.shared.fetchTweets(startingAfter: lastTweet, limit: itemsPerPage, completion: { tweets in
+                guard tweets.first?.tweetID != self.tweets.last?.tweetID else { return }
+                self.tweets.append(contentsOf: tweets.sorted(by: { $0.timestamp > $1.timestamp }))
+                self.checkIfUserLikedTweets()
+                self.collectionView.refreshControl?.endRefreshing()
+            })
+            
+        }
+    }
+    
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let controller = TweetController(tweet: tweets[indexPath.row])
         navigationController?.pushViewController(controller, animated: true)
@@ -148,6 +212,17 @@ extension FeedController: UICollectionViewDelegateFlowLayout {
 }
 
 extension FeedController: TweetCellDelegate {
+    func handleShareTapped(_ cell: TweetCell) {
+        guard let tweetText = cell.tweet?.caption else { return }
+        
+        let shareSheetVC = UIActivityViewController(
+            activityItems: [
+                tweetText
+            ], applicationActivities: nil)
+        
+        present(shareSheetVC, animated: true)
+    }
+    
     func handleFetchUser(withUsername username: String) {
         UserService.shared.fetchUser(withUsername: username) { user in
             let controller = ProfileController(user: user)

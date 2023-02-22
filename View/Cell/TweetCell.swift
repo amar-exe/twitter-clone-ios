@@ -12,6 +12,7 @@ protocol TweetCellDelegate: AnyObject {
     func handleProfileImageTapped(_ cell: TweetCell)
     func handleReplyTapped(_ cell: TweetCell)
     func handleLikeTapped(_ cell: TweetCell)
+    func handleShareTapped(_ cell: TweetCell)
     func handleFetchUser(withUsername username: String)
 }
 
@@ -165,7 +166,7 @@ class TweetCell: UICollectionViewCell {
     }
     
     @objc func handleShareTapped() {
-        
+        delegate?.handleShareTapped(self)
     }
     
 //    MARK: Helpers

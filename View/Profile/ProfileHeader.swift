@@ -83,7 +83,6 @@ class ProfileHeader: UICollectionReusableView {
         let label = UILabel()
         label.font = UIFont.systemFont(ofSize: 16)
         label.numberOfLines = 3
-        label.text = "This is a user bio and it will span for more than one line for testing purposes"
         return label
     }()
     
