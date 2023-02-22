@@ -12,6 +12,8 @@ class FeedController: UICollectionViewController {
     
 //    MARK: Properties
     
+    private var backgroundView: UIView!
+    
     var user: User? {
         didSet {
             configureLeftBarButton()
@@ -21,6 +23,8 @@ class FeedController: UICollectionViewController {
     private var tweets = [Tweet]() {
         didSet {
             collectionView.reloadData()
+            backgroundView.isHidden = !tweets.isEmpty
+            collectionView.refreshControl?.endRefreshing()
         }
     }
     
@@ -34,6 +38,10 @@ class FeedController: UICollectionViewController {
 
         configureUI()
         fetchTweets()
+        
+        configureTableBackgroundView()
+        
+        collectionView.backgroundView = backgroundView
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -51,6 +59,7 @@ class FeedController: UICollectionViewController {
             self.checkIfUserLikedTweets()
             self.collectionView.refreshControl?.endRefreshing()
         }
+        collectionView.refreshControl?.endRefreshing()
     }
     
     func checkIfUserLikedTweets() {
@@ -79,6 +88,21 @@ class FeedController: UICollectionViewController {
     }
     
 //    MARK: Helpers
+    
+    func configureTableBackgroundView() {
+        backgroundView = UIView(frame: collectionView.bounds)
+        backgroundView.backgroundColor = .white // set the background color
+        let messageLabel = UILabel()
+        messageLabel.numberOfLines = 2
+        messageLabel.text = "No tweets in your feed yet!\nTry following someone" // set the message to display
+        messageLabel.textAlignment = .center
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+        backgroundView.addSubview(messageLabel)
+        NSLayoutConstraint.activate([
+            messageLabel.centerXAnchor.constraint(equalTo: backgroundView.centerXAnchor),
+            messageLabel.centerYAnchor.constraint(equalTo: backgroundView.centerYAnchor),
+        ])
+    }
     
     func configureUI() {
         view.backgroundColor = .white
