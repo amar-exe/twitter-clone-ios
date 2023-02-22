@@ -77,6 +77,7 @@ class FeedController: UICollectionViewController {
 //    MARK: Selectors
     
     @objc func handleRefresh() {
+        tweets = []
         fetchTweets()
     }
     

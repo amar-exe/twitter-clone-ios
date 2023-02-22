@@ -56,6 +56,7 @@ class SearchController: UITableViewController {
         fetchUsers()
         configureSearchController()
         configureTableBackgroundView()
+        configureRefreshControl()
         
         tableView.backgroundView = backgroundView
     }
@@ -76,12 +77,23 @@ class SearchController: UITableViewController {
     
 //    MARK: Selectors
     
+    @objc func handleRefresh() {
+        fetchUsers()
+        tableView.refreshControl?.endRefreshing()
+    }
+    
     @objc func handleDismissal() {
         dismiss(animated: true)
     }
     
     
 //    MARK: Helpers
+    
+    func configureRefreshControl() {
+        let refreshControl = UIRefreshControl()
+        refreshControl.addTarget(self, action: #selector(handleRefresh), for: .valueChanged)
+        tableView.refreshControl = refreshControl
+    }
     
     func configureTableBackgroundView() {
         backgroundView = UIView(frame: tableView.bounds)
