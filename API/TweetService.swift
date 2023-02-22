@@ -73,6 +73,48 @@ struct TweetService {
         }
     }
     
+    func fetchTweets(startingAfter tweet: Tweet? = nil, limit: UInt = 20, completion: @escaping([Tweet]) -> Void) {
+        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+        var query = REF_USER_TWEETS.child(currentUid).queryOrderedByKey().queryLimited(toLast: limit)
+        
+        if let lastTweet = tweet {
+//            query = query.queryOrderedByKey().queryStarting(atValue: lastTweet.tweetID).queryLimited(toLast: limit) as! DatabaseReference
+            query = REF_USER_TWEETS.child(currentUid).queryOrderedByKey().queryEnding(atValue: lastTweet.tweetID).queryLimited(toLast: limit)
+        }
+        
+        query.observeSingleEvent(of: .value) { snapshot in
+            guard snapshot.exists() else {
+                completion([])
+                return
+            }
+            
+            var tweets = [Tweet]()
+            
+            snapshot.children.forEach { child in
+                guard let snapshot = child as? DataSnapshot else { return }
+                let tweetID = snapshot.key
+                
+                self.fetchTweet(withTweetID: tweetID) { tweet in
+                    tweets.append(tweet)
+                    
+                    if tweets.count == snapshot.childrenCount {
+                        // reached end of data
+                        completion(tweets)
+                        return
+                    }
+                    
+                    if tweets.count == limit {
+                        completion(tweets)
+                        return
+                    }
+                    
+                    
+                }
+            }
+        }
+    }
+
+    
     func fetchTweets(forUser user: User, completion: @escaping([Tweet]) -> Void) {
         var tweets = [Tweet]()
         REF_USER_TWEETS.child(user.uid).observe(.childAdded) { snapshot in
