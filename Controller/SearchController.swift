@@ -17,6 +17,7 @@ class SearchController: UITableViewController {
     //    MARK: Properties
     
     private let config: SearchControllerConfiguration
+    private var backgroundView: UIView!
     
     private var users = [User]() {
         didSet {
@@ -27,6 +28,7 @@ class SearchController: UITableViewController {
     private var filteredUsers = [User]() {
         didSet {
             tableView.reloadData()
+            backgroundView.isHidden = !filteredUsers.isEmpty
         }
     }
     
@@ -53,6 +55,9 @@ class SearchController: UITableViewController {
         configureUI()
         fetchUsers()
         configureSearchController()
+        configureTableBackgroundView()
+        
+        tableView.backgroundView = backgroundView
     }
     
     override func viewWillAppear(_ animated: Bool) {
@@ -76,7 +81,21 @@ class SearchController: UITableViewController {
     }
     
     
-    //    helpers
+//    MARK: Helpers
+    
+    func configureTableBackgroundView() {
+        backgroundView = UIView(frame: tableView.bounds)
+        backgroundView.backgroundColor = .white // set the background color
+        let messageLabel = UILabel()
+        messageLabel.text = "No users found" // set the message to display
+        messageLabel.textAlignment = .center
+        messageLabel.translatesAutoresizingMaskIntoConstraints = false
+        backgroundView.addSubview(messageLabel)
+        NSLayoutConstraint.activate([
+            messageLabel.centerXAnchor.constraint(equalTo: backgroundView.centerXAnchor),
+            messageLabel.centerYAnchor.constraint(equalTo: backgroundView.centerYAnchor),
+        ])
+    }
     
     func configureUI() {
         view.backgroundColor = .white
