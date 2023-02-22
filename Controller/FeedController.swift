@@ -12,6 +12,9 @@ class FeedController: UICollectionViewController {
     
 //    MARK: Properties
     
+    let itemsPerPage: UInt = 3
+    var pageNum = 0
+    
     private var backgroundView: UIView!
     
     var user: User? {
@@ -48,17 +51,29 @@ class FeedController: UICollectionViewController {
         super.viewWillAppear(animated)
         navigationController?.navigationBar.barStyle = .default
         navigationController?.navigationBar.isHidden = false
+        
+        fetchTweets()
     }
     
 //    MARK: API
     
+//    func fetchTweets() {
+//        collectionView.refreshControl?.beginRefreshing()
+//        TweetService.shared.fetchTweets { tweets in
+//            self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
+//            self.checkIfUserLikedTweets()
+//            self.collectionView.refreshControl?.endRefreshing()
+//        }
+//        collectionView.refreshControl?.endRefreshing()
+//    }
+    
     func fetchTweets() {
         collectionView.refreshControl?.beginRefreshing()
-        TweetService.shared.fetchTweets { tweets in
+        TweetService.shared.fetchTweets(limit: itemsPerPage, completion: { tweets in
             self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
             self.checkIfUserLikedTweets()
             self.collectionView.refreshControl?.endRefreshing()
-        }
+        })
         collectionView.refreshControl?.endRefreshing()
     }
     
@@ -154,6 +169,31 @@ extension FeedController {
         print("DEBUG: Tweet is: \(tweets[indexPath.row])")
         
         return cell
+    }
+    
+    override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let contentOffset = scrollView.contentOffset.y
+        let maximumOffset = scrollView.contentSize.height - scrollView.frame.size.height
+        let deltaOffset = maximumOffset - contentOffset
+        
+        if deltaOffset <= 0 {
+            pageNum += 1
+//            fetchTweets(page: currentPage) { fetchedTweets in
+//                self.tweets.append(contentsOf: fetchedTweets)
+//                self.collectionView.reloadData()
+//            }
+            
+            guard var lastTweet = tweets.last else { return }
+        
+            
+            TweetService.shared.fetchTweets(startingAfter: lastTweet, limit: itemsPerPage, completion: { tweets in
+                guard tweets.first?.tweetID != self.tweets.last?.tweetID else { return }
+                self.tweets.append(contentsOf: tweets.sorted(by: { $0.timestamp > $1.timestamp }))
+                self.checkIfUserLikedTweets()
+                self.collectionView.refreshControl?.endRefreshing()
+            })
+            
+        }
     }
     
     override func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
