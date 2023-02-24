@@ -10,7 +10,7 @@ import Firebase
 struct ConversationService {
     static let shared = ConversationService()
     
-    private func finishCreatingConversation(conversationID: String, firstMessage: Message, completion: @escaping (Bool) -> Void) {
+    private func finishCreatingConversation(name: String, conversationID: String, firstMessage: Message, completion: @escaping (Bool) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
         let messageDate = firstMessage.sentDate
@@ -48,7 +48,8 @@ struct ConversationService {
             "content": message,
             "date": dateString,
             "sender_uid": uid,
-            "is_read": false
+            "is_read": false,
+            "name" : name
         ]
         
         let value: [String : Any] = [
@@ -57,7 +58,7 @@ struct ConversationService {
             ]
         ]
         
-        DB_REF.child("\(conversationID)").setValue(value) { error, _ in
+        REF_CONVERSATIONS.child("\(conversationID)").setValue(value) { error, _ in
             guard error == nil else {
                 completion(false)
                 return
@@ -109,14 +110,17 @@ struct ConversationService {
             
             let conversationId = "conversation_\(firstMessage.messageId)"
             
+            let latestMessage: [String : Any] = [
+                "date" : dateString,
+                "message" : message,
+                "is_read" : false
+            ]
+            
             let newConversationData: [String : Any] = [
                 "id" : conversationId,
                 "other_user_uid" : otherUser.uid,
-                "latest_message" : [
-                    "date" : dateString,
-                    "message" : message,
-                    "is_read" : false
-                ]
+                "name" : otherUser.name,
+                "latest_message" : latestMessage
             ]
             
             if var conversations = userNode["conversations"] as? [[String : Any]] {
@@ -128,7 +132,8 @@ struct ConversationService {
                         completion(false)
                         return
                     }
-                    self.finishCreatingConversation(conversationID: conversationId,
+                    self.finishCreatingConversation(name: otherUser.name,
+                                                    conversationID: conversationId,
                                                     firstMessage: firstMessage,
                                                     completion: completion)
                 }
@@ -144,7 +149,8 @@ struct ConversationService {
                         completion(false)
                         return
                     }
-                    self.finishCreatingConversation(conversationID: conversationId,
+                    self.finishCreatingConversation(name: otherUser.name,
+                                                    conversationID: conversationId,
                                                     firstMessage: firstMessage,
                                                     completion: completion)
                 }

@@ -17,7 +17,7 @@ class ConversationsController: UIViewController {
     private let tableView: UITableView = {
         let table = UITableView()
         table.isHidden = true
-        table.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        table.register(ConversationCell.self, forCellReuseIdentifier: ConversationCell.reuseIdentifier)
         return table
     }()
     
@@ -88,7 +88,7 @@ extension ConversationsController: UITableViewDelegate, UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        let cell = tableView.dequeueReusableCell(withIdentifier: ConversationCell.reuseIdentifier, for: indexPath)
         cell.textLabel?.text = "Hello World"
         cell.accessoryType = .disclosureIndicator
         return cell
