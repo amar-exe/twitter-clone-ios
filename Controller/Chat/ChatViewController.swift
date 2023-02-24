@@ -64,21 +64,24 @@ class ChatViewController: MessagesViewController {
     
     public let otherUser: User
     public var isNewConversation = false
+    private var conversationId: String?
     
     private var messages = [Message]()
     
+    
     private var selfSender: Sender? {
-        guard let email = UserDefaults.standard.value(forKey: "email") as? String else { return nil }
+        guard let currentUid = Auth.auth().currentUser?.uid else { return nil }
         
         return Sender(photoURL: "",
-                      senderId: email,
-                      displayName: " Amar Fazlic")
+                      senderId: currentUid,
+                      displayName: "Me")
     }
     
 //    MARK: Lifecycle
 
-    init(withUser user: User) {
+    init(withUser user: User, id: String?) {
         self.otherUser = user
+        self.conversationId = id
         super.init(nibName: nil, bundle: nil)
     }
     
@@ -95,20 +98,40 @@ class ChatViewController: MessagesViewController {
         messagesCollectionView.messagesLayoutDelegate = self
         messagesCollectionView.messagesDisplayDelegate = self
         messageInputBar.delegate = self
-        
-        listenForMessages()
-        
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        if let conversationId = conversationId {
+            listenForMessages(id: conversationId, shouldScrollToBottom: true)
+        }
         messageInputBar.inputTextView.becomeFirstResponder()
     }
     
 //    MARK: Helpers
     
-    private func listenForMessages() {
-        
+    private func listenForMessages(id: String, shouldScrollToBottom: Bool) {
+        ConversationService.shared.getAllMessagesForConversation(with: id) { [weak self] result in
+            switch result {
+            case .success(let messages):
+                guard !messages.isEmpty else {
+                    return
+                }
+                self?.messages = messages
+                
+                DispatchQueue.main.async {
+                    self?.messagesCollectionView.reloadDataAndKeepOffset()
+                    
+                    if shouldScrollToBottom {
+                        self?.messagesCollectionView.scrollToLastItem()
+                    }
+                    
+                }
+            case .failure(let error):
+                print("failed to get messages due to: \(error)")
+            }
+            
+        }
     }
 }
 
@@ -120,22 +143,38 @@ extension ChatViewController: InputBarAccessoryViewDelegate {
         
         print("DEBUG: Sending message: \(text)")
         
+        
+        let message = Message(sender: selfSender,
+                              messageId: messageId,
+                              sentDate: Date(),
+                              kind: .text(text))
+        
 //        Send message
         if isNewConversation {
 //            create convo in database
-            let message = Message(sender: selfSender,
-                                  messageId: messageId,
-                                  sentDate: Date(),
-                                  kind: .text(text))
+            
             ConversationService.shared.createNewConversation(with: otherUser, firstMessage: message) { [weak self] success in
                 if success {
                     print("message sent")
+                    self?.isNewConversation = false
                 } else {
                     print("failed to send")
                 }
             }
         }
-//        append to existing conversation
+        else {
+            guard let conversationId = conversationId, let name = self.title else { return }
+            //        append to existing conversation
+            ConversationService.shared.sendMessage(to: conversationId, otherUserUid: otherUser.uid, name: name, newMessage: message) { success in
+                if success {
+                    print("message appended")
+                }
+                else {
+                    print("message not appended")
+                }
+            }
+        }
+
     }
     
     private func createMessageId() -> String? {
@@ -152,8 +191,8 @@ extension ChatViewController: MessagesDataSource, MessagesLayoutDelegate, Messag
         if let sender = selfSender {
             return sender
         }
+        
         fatalError("selfSender is nil, email should have been cached")
-        return Sender(photoURL: "", senderId: "", displayName: "")
     }
     
     func messageForItem(at indexPath: IndexPath, in messagesCollectionView: MessageKit.MessagesCollectionView) -> MessageKit.MessageType {

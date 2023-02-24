@@ -156,7 +156,7 @@ extension SearchController {
     }
     
     func createNewConversation(withUser user: User) -> ChatViewController {
-        let vc = ChatViewController(withUser: user)
+        let vc = ChatViewController(withUser: user, id: nil)
         vc.isNewConversation = true
         vc.title = user.name
         vc.navigationItem.largeTitleDisplayMode = .never

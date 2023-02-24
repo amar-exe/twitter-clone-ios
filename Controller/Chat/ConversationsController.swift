@@ -126,7 +126,7 @@ extension ConversationsController: UITableViewDelegate, UITableViewDataSource {
         let model = conversations[indexPath.row]
         UserService.shared.fetchUser(uid: model.otherUserUid) { [weak self] user in
             DispatchQueue.main.async {
-                let vc = ChatViewController(withUser: user)
+                let vc = ChatViewController(withUser: user, id: model.id)
                 vc.title = model.name
                 vc.navigationItem.largeTitleDisplayMode = .never
                 self?.navigationController?.pushViewController(vc, animated: true)
