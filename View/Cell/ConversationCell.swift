@@ -6,6 +6,7 @@
 //
 
 import UIKit
+import SDWebImage
 
 class ConversationCell: UITableViewCell {
 
@@ -52,14 +53,21 @@ class ConversationCell: UITableViewCell {
         userNameLabel.frame = CGRect(x: userImageView.right + 10,
                                      y: 10,
                                      width: contentView.width - 20 - userImageView.width,
-                                     height: (contentView.height - 20) / 20)
+                                     height: (contentView.height-20)/2)
         userMessageLabel.frame = CGRect(x: userImageView.right + 10,
                                         y: userNameLabel.bottom + 10,
                                         width: contentView.width - 20 - userImageView.width,
-                                        height: (contentView.height - 20) / 20)
+                                        height: (contentView.height-20)/2)
     }
     
-    public func configure(with model: String) {
+    public func configure(with model: Conversation) {
+        self.userMessageLabel.text = model.latestMessage.text
+        self.userNameLabel.text = model.name
         
+        UserService.shared.fetchUser(uid: model.otherUserUid) { [weak self] user in
+            DispatchQueue.main.async {
+                self?.userImageView.sd_setImage(with: user.profileImageUrl)
+            }
+        }
     }
 }

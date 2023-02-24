@@ -52,6 +52,8 @@ struct Sender: SenderType {
 
 class ChatViewController: MessagesViewController {
     
+    private var conversations = [Conversation]()
+    
     public static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -72,6 +74,8 @@ class ChatViewController: MessagesViewController {
                       senderId: email,
                       displayName: " Amar Fazlic")
     }
+    
+//    MARK: Lifecycle
 
     init(withUser user: User) {
         self.otherUser = user
@@ -92,11 +96,19 @@ class ChatViewController: MessagesViewController {
         messagesCollectionView.messagesDisplayDelegate = self
         messageInputBar.delegate = self
         
+        listenForMessages()
+        
     }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         messageInputBar.inputTextView.becomeFirstResponder()
+    }
+    
+//    MARK: Helpers
+    
+    private func listenForMessages() {
+        
     }
 }
 

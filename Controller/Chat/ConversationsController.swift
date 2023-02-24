@@ -10,9 +10,9 @@ import JGProgressHUD
 
 class ConversationsController: UIViewController {
     
-    
-    
     private let spinner = JGProgressHUD(style: .dark)
+    
+    private var conversations = [Conversation]()
     
     private let tableView: UITableView = {
         let table = UITableView()
@@ -42,6 +42,7 @@ class ConversationsController: UIViewController {
         configureTableView()
         configureNoConversationsLabel()
         fetchConversations()
+        startListeningForConversations()
     }
     
     override func viewDidLayoutSubviews() {
@@ -61,6 +62,32 @@ class ConversationsController: UIViewController {
     
 
 //    MARK: Helpers
+    
+    private func startListeningForConversations() {
+        
+        UserService.shared.fetchCurrentUser { user in
+            ConversationService.shared.getAllConversations(forUser: user) { [weak self] result in
+                switch result {
+                case .success(let conversations):
+                    guard !conversations.isEmpty else { return }
+                    self?.conversations = conversations
+                    
+                    DispatchQueue.main.async {
+                        self?.tableView.reloadData()
+                    }
+                    
+                case .failure(let error):
+                    print("failed to fetch convos with error: \(error)")
+                }
+                
+                
+                
+            
+            }
+        }
+        
+        
+    }
     
     private func configureUI() {
         view.backgroundColor = .white
@@ -84,22 +111,30 @@ class ConversationsController: UIViewController {
 
 extension ConversationsController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1
+        return conversations.count
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: ConversationCell.reuseIdentifier, for: indexPath)
-        cell.textLabel?.text = "Hello World"
-        cell.accessoryType = .disclosureIndicator
+        let model = conversations[indexPath.row]
+        let cell = tableView.dequeueReusableCell(withIdentifier: ConversationCell.reuseIdentifier, for: indexPath) as! ConversationCell
+        cell.configure(with: model)
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        
-        let vc = ChatViewController(withUser: User(uid: "", dictionary: [:]))
-        vc.title = "Random Name"
-        vc.navigationItem.largeTitleDisplayMode = .never
-        navigationController?.pushViewController(vc, animated: true)
+        let model = conversations[indexPath.row]
+        UserService.shared.fetchUser(uid: model.otherUserUid) { [weak self] user in
+            DispatchQueue.main.async {
+                let vc = ChatViewController(withUser: user)
+                vc.title = model.name
+                vc.navigationItem.largeTitleDisplayMode = .never
+                self?.navigationController?.pushViewController(vc, animated: true)
+            }
+        }
+    }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        return 120
     }
 }
