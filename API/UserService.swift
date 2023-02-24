@@ -23,6 +23,17 @@ struct UserService {
         }
     }
     
+    func fetchCurrentUser(completion: @escaping(User) -> Void) {
+        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+        
+        REF_USERS.child(currentUid).observeSingleEvent(of: .value) { snapshot in
+            guard let dictionary = snapshot.value as? [String : AnyObject] else { return }
+            
+            let user = User(uid: currentUid, dictionary: dictionary)
+            completion(user)
+        }
+    }
+    
     func fetchUsers(completion: @escaping([User]) -> Void ) {
         var users = [User]()
         REF_USERS.observe(.childAdded) { snapshot in

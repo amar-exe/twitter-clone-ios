@@ -150,8 +150,17 @@ extension SearchController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
-        let vc = ProfileController(user: user)
+        let vc = config == .messages ? createNewConversation(withUser: user) : ProfileController(user: user)
         navigationController?.pushViewController(vc, animated: true)
+        
+    }
+    
+    func createNewConversation(withUser user: User) -> ChatViewController {
+        let vc = ChatViewController(withUser: user)
+        vc.isNewConversation = true
+        vc.title = user.name
+        vc.navigationItem.largeTitleDisplayMode = .never
+        return vc
     }
 }
 

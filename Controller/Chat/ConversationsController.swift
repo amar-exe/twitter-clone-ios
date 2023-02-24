@@ -10,6 +10,8 @@ import JGProgressHUD
 
 class ConversationsController: UIViewController {
     
+    
+    
     private let spinner = JGProgressHUD(style: .dark)
     
     private let tableView: UITableView = {
@@ -50,9 +52,11 @@ class ConversationsController: UIViewController {
 //    MARK: Selectors
     
     @objc func didTapComposeButton() {
-        let vc = NewConversationViewController()
-        let navVC = UINavigationController(rootViewController: vc)
-        present(navVC, animated: true)
+        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+        }) else { return }
+        
+        guard let tab = window.rootViewController as? MainTabController else { return }
+        tab.actionButtonTapped()
     }
     
 
@@ -93,7 +97,7 @@ extension ConversationsController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         
-        let vc = ChatViewController()
+        let vc = ChatViewController(withUser: User(uid: "", dictionary: [:]))
         vc.title = "Random Name"
         vc.navigationItem.largeTitleDisplayMode = .never
         navigationController?.pushViewController(vc, animated: true)
