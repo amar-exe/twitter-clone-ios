@@ -16,6 +16,8 @@ class SearchController: UITableViewController {
     
     //    MARK: Properties
     
+    let pageSize = 3
+    
     private let config: SearchControllerConfiguration
     private var backgroundView: UIView!
     
@@ -53,7 +55,7 @@ class SearchController: UITableViewController {
         super.viewDidLoad()
         
         configureUI()
-        fetchUsers()
+        inSearchMode ? fetchCurrentUser() : fetchFirstBatch()
         configureSearchController()
         configureTableBackgroundView()
         configureRefreshControl()
@@ -69,10 +71,28 @@ class SearchController: UITableViewController {
     
     //    MARK: API
     
-    func fetchUsers() {
-        UserService.shared.fetchUsers { users in
-            self.users = users
+    func fetchFirstBatch() {
+        UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
+            self?.users = users
         }
+    }
+    
+    func fetchCurrentUser() {
+        UserService.shared.fetchCurrentUser { [weak self] user in
+            self?.users.append(user)
+        }
+    }
+    
+    func fetchUsers() {
+        guard let lastUser = self.users.last else {
+            return
+        }
+        UserService.shared.fetchUsers(startingAt: lastUser, pageSize: pageSize) { [weak self] users in
+            self?.users.append(contentsOf: users)
+        }
+//        UserService.shared.fetchUsers { users in
+//            self.users = users
+//        }
     }
     
 //    MARK: Selectors
@@ -142,6 +162,14 @@ extension SearchController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: UserCell.reuseIdentifier, for: indexPath) as! UserCell
         
+        if indexPath.row == 0 {
+            UserService.shared.fetchCurrentUser { user in
+                cell.user = user
+                
+            }
+            return cell
+        }
+        
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
         
         cell.user = user
@@ -170,5 +198,16 @@ extension SearchController: UISearchResultsUpdating {
         
         filteredUsers = users.filter({ $0.username.contains(searchText) })
         
+    }
+}
+
+extension SearchController {
+    override func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let offsetY = scrollView.contentOffset.y
+        let contentHeight = scrollView.contentSize.height
+
+        if offsetY > contentHeight - scrollView.frame.height {
+            fetchUsers()
+        }
     }
 }

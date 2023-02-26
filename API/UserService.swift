@@ -117,4 +117,41 @@ struct UserService {
         }
     }
     
+    func fetchUsers(startingAt startUser: User, pageSize: Int, completion: @escaping ([User]) -> Void) {
+        var users = [User]()
+        let query = REF_USERS.queryOrderedByKey().queryStarting(atValue: startUser.uid).queryLimited(toFirst: UInt(pageSize))
+        query.observeSingleEvent(of: .value) { snapshot in
+            guard let children = snapshot.children.allObjects as? [DataSnapshot] else {
+                completion([])
+                return
+            }
+            for child in children {
+                let uid = child.key
+                guard let dict = child.value as? [String: AnyObject] else { continue }
+                let user = User(uid: uid, dictionary: dict)
+                users.append(user)
+            }
+            completion(users)
+        }
+    }
+    
+    func fetchUsers(pageSize: Int, completion: @escaping ([User]) -> Void) {
+        var users = [User]()
+        let query = REF_USERS.queryOrderedByKey().queryLimited(toFirst: UInt(pageSize))
+        query.observeSingleEvent(of: .value) { snapshot in
+            guard let children = snapshot.children.allObjects as? [DataSnapshot] else {
+                completion([])
+                return
+            }
+            for child in children {
+                let uid = child.key
+                guard let dict = child.value as? [String: AnyObject] else { continue }
+                let user = User(uid: uid, dictionary: dict)
+                users.append(user)
+            }
+            completion(users)
+        }
+    }
+
+    
 }

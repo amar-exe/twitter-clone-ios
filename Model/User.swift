@@ -22,6 +22,7 @@ struct User: Equatable {
     var isFollowed = false
     var stats: UserRelationStats?
     var bio: String?
+    var conversations: [Conversation]?
     
     var isCurrentUser: Bool {
         return Auth.auth().currentUser?.uid == uid
@@ -43,7 +44,24 @@ struct User: Equatable {
             self.profileImageUrl = url
         }
         
-        
+        if let conversation = dictionary["conversations"] as? [String : Any] {
+             guard     let conversationId = dictionary["id"] as? String,
+                  let name = dictionary["name"] as? String,
+                  let otherUserUid = dictionary["other_user_uid"] as? String,
+                       let latestMessage = dictionary["latest_message"] as? [String : Any],
+            let date = latestMessage["date"] as? String,
+            let message = latestMessage["message"] as? String,
+                       let isRead = latestMessage["is_read"] as? Bool else { return }
+            
+            let latestMessageObject = LatestMessage(date: date,
+                                                    text: message,
+                                                    isRead: isRead)
+            
+            conversations?.append(Conversation(id: conversationId,
+                                               name: name,
+                                               otherUserUid: otherUserUid,
+                                               latestMessage: latestMessageObject))
+        }
     }
 }
 
