@@ -138,18 +138,47 @@ struct UserService {
     func fetchUsers(pageSize: Int, completion: @escaping ([User]) -> Void) {
         var users = [User]()
         let query = REF_USERS.queryOrderedByKey().queryLimited(toFirst: UInt(pageSize))
+//        query.observeSingleEvent(of: .value) { snapshot in
+//            guard let children = snapshot.children.allObjects as? [DataSnapshot] else {
+//                completion([])
+//                return
+//            }
+//            for child in children {
+//                let uid = child.key
+//                guard let dict = child.value as? [String: AnyObject] else { continue }
+//                let user = User(uid: uid, dictionary: dict)
+//                users.append(user)
+//            }
+//            completion(users)
+//        }
+//
         query.observeSingleEvent(of: .value) { snapshot in
-            guard let children = snapshot.children.allObjects as? [DataSnapshot] else {
+            guard snapshot.exists() else {
                 completion([])
                 return
             }
-            for child in children {
-                let uid = child.key
-                guard let dict = child.value as? [String: AnyObject] else { continue }
-                let user = User(uid: uid, dictionary: dict)
-                users.append(user)
+            
+            snapshot.children.forEach { child in
+                guard let snapshot = child as? DataSnapshot else { return }
+                let uid = snapshot.key
+                
+                self.fetchUser(uid: uid) { user in
+                    users.append(user)
+                    
+                    if users.count == snapshot.childrenCount {
+                        // reached end of data
+                        completion(users)
+                        return
+                    }
+                    
+                    if users.count == pageSize {
+                        completion(users)
+                        return
+                    }
+                    
+                    
+                }
             }
-            completion(users)
         }
     }
 
