@@ -80,6 +80,7 @@ class SearchController: UITableViewController {
     func fetchCurrentUser() {
         UserService.shared.fetchCurrentUser { [weak self] user in
             self?.users.append(user)
+            print("DEBUG: Current user in search controller \(user)")
         }
     }
     

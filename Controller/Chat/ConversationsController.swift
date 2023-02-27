@@ -124,6 +124,7 @@ extension ConversationsController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let model = conversations[indexPath.row]
+        print("DEBUG: model from conversations with conversation id: \(model.id), \n model name: \(model.name), \n model other user id: \(model.otherUserUid), \n model latest message: \(model.latestMessage)")
         UserService.shared.fetchUser(uid: model.otherUserUid) { [weak self] user in
             DispatchQueue.main.async {
                 let vc = ChatViewController(withUser: user, id: model.id)

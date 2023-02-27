@@ -100,6 +100,28 @@ class ChatViewController: MessagesViewController {
         messageInputBar.delegate = self
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+        }) else { return }
+        
+        guard let tab = window.rootViewController as? MainTabController else { return }
+//        tab.actionButton.isHidden = true
+        setViewIsHidden(view: tab.actionButton, hidden: true)
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+        }) else { return }
+        
+        guard let tab = window.rootViewController as? MainTabController else { return }
+//        tab.actionButton.isHidden = false
+        setViewIsHidden(view: tab.actionButton, hidden: false)
+    }
+    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         if let conversationId = conversationId {
@@ -109,6 +131,12 @@ class ChatViewController: MessagesViewController {
     }
     
 //    MARK: Helpers
+    
+    func setViewIsHidden(view: UIView, hidden: Bool) {
+        UIView.transition(with: view, duration: 0.5, options: .transitionCrossDissolve, animations: {
+            view.isHidden = hidden
+        })
+    }
     
     private func listenForMessages(id: String, shouldScrollToBottom: Bool) {
         ConversationService.shared.getAllMessagesForConversation(with: id) { [weak self] result in
@@ -181,7 +209,7 @@ extension ChatViewController: InputBarAccessoryViewDelegate {
         guard let currentUid = Auth.auth().currentUser?.uid else { return nil }
         
         let dateString = Self.dateFormatter.string(from: Date())
-        var newIdentifier = "\(otherUser.uid)_\(currentUid)_\(dateString)"
+        var newIdentifier = "\(otherUser.uid)_\(currentUid)"
         return newIdentifier
     }
 }

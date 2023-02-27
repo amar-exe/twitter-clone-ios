@@ -22,7 +22,10 @@ struct ConversationService {
     static let shared = ConversationService()
     
     private func finishCreatingConversation(name: String, conversationID: String, firstMessage: Message, completion: @escaping (Bool) -> Void) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
+        guard let uid = Auth.auth().currentUser?.uid else {
+            completion(false)
+            return
+        }
         
         let messageDate = firstMessage.sentDate
         let dateString = ChatViewController.dateFormatter.string(from: messageDate)
@@ -69,6 +72,8 @@ struct ConversationService {
             ]
         ]
         
+        print("DEBUG: adding convo: \(conversationID)")
+        
         REF_CONVERSATIONS.child("\(conversationID)").setValue(value) { error, _ in
             guard error == nil else {
                 completion(false)
@@ -81,6 +86,10 @@ struct ConversationService {
     /// Creates a new conversation with the specified user and sent message
     public func createNewConversation(with otherUser: User, firstMessage: Message, completion: @escaping (Bool) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else { return }
+        var currentUser: User? = nil
+        UserService.shared.fetchCurrentUser { user in
+            currentUser = user
+        }
         
         let ref = REF_USERS.child(uid)
         ref.observeSingleEvent(of: .value) { snapshot in
@@ -134,21 +143,6 @@ struct ConversationService {
                 "latest_message" : latestMessage
             ]
             
-            let recipient_latestMessage: [String : Any] = [
-                "date" : dateString,
-                "message" : message,
-                "is_read" : false
-            ]
-            
-            UserService.shared.fetchUser(uid: uid) { user in
-                let recipient_newConversationData: [String : Any] = [
-                    "id" : conversationId,
-                    "other_user_uid" : uid,
-                    "name" : user.name,
-                    "latest_message" : latestMessage
-                ]
-            }
-            
             let recipient_newConversationData: [String : Any] = [
                 "id" : conversationId,
                 "other_user_uid" : uid,
@@ -161,7 +155,7 @@ struct ConversationService {
                 if var conversations = snapshot.value as? [[String : Any]] {
 //                    append
                     conversations.append(recipient_newConversationData)
-                    ref.child("\(otherUser.uid)/conversations").setValue([recipient_newConversationData])
+                    ref.child("\(otherUser.uid)/conversations").setValue(conversations)
                 }
                 else {
 //                    create
@@ -181,6 +175,7 @@ struct ConversationService {
                         completion(false)
                         return
                     }
+                    
                     self.finishCreatingConversation(name: otherUser.name,
                                                     conversationID: conversationId,
                                                     firstMessage: firstMessage,
