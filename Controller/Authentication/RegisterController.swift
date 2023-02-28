@@ -141,17 +141,32 @@ class RegisterController: UIViewController {
         let credentials = AuthCredentials(email: email, password: password, name: name, username: username, profileImage: profileImage)
         
         AuthService.shared.registerUser(credentials: credentials) { error, ref in
-            print("signup successful ")
+            if error != nil {
+                return
+            }
         }
         
-        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
-        }) else { return }
+        let alert = UIAlertController(title: nil, message: "You have been registered successfully", preferredStyle: .alert)
+        let alertAction = UIAlertAction(title: "Ok", style: .default) { _ in
+            self.dismiss(animated: true)
+            
+            guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+            }) else { return }
+            
+            guard let tab = window.rootViewController as? MainTabController else { return }
+            
+            tab.authUserAndConfigureUI()
+            
+            self.dismiss(animated: true)
+        }
+        alert.addAction(alertAction)
+        present(alert, animated: true)
         
-        guard let tab = window.rootViewController as? MainTabController else { return }
         
-        tab.authUserAndConfigureUI()
-        
-        self.dismiss(animated: true)
+    }
+    
+    @objc private func handleDismissal() {
+        dismiss(animated: true)
     }
     
     private func validateFields() {

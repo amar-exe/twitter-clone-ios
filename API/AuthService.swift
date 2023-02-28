@@ -33,7 +33,7 @@ struct AuthService {
         let filename = NSUUID().uuidString
         let storageRef = STORAGE_PROFILE_IMAGES.child(filename)
         
-        storageRef.putData(imageData) { meta, error in
+        STORAGE_PROFILE_IMAGES.child(filename).putData(imageData) { meta, error in
             storageRef.downloadURL { url, error in
                 guard let profileImageUrl = url?.absoluteString else { return }
                 
