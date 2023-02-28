@@ -23,6 +23,7 @@ class SearchController: UITableViewController {
     
     private var users = [User]() {
         didSet {
+            backgroundView.isHidden = !users.isEmpty
             tableView.reloadData()
         }
     }
