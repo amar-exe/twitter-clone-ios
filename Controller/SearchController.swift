@@ -56,7 +56,7 @@ class SearchController: UITableViewController {
         super.viewDidLoad()
         
         configureUI()
-        inSearchMode ? fetchCurrentUser() : fetchFirstBatch()
+        config == .userSearch ? fetchCurrentUser() : fetchFirstBatch()
         configureSearchController()
         configureTableBackgroundView()
         configureRefreshControl()
@@ -73,9 +73,16 @@ class SearchController: UITableViewController {
     //    MARK: API
     
     func fetchFirstBatch() {
-        UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
-            self?.users = users
+        UserService.shared.fetchCurrentUser { [self] currentUser in
+            UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
+                users.forEach { user in
+                    if user.uid != currentUser.uid {
+                        self?.users.append(user)
+                    }
+                }
+            }
         }
+        
     }
     
     func fetchCurrentUser() {
@@ -164,7 +171,7 @@ extension SearchController {
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: UserCell.reuseIdentifier, for: indexPath) as! UserCell
         
-        if indexPath.row == 0 {
+        if indexPath.row == 0 && config == .userSearch{
             UserService.shared.fetchCurrentUser { user in
                 cell.user = user
                 
