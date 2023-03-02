@@ -209,7 +209,7 @@ extension ChatViewController: InputBarAccessoryViewDelegate {
         guard let currentUid = Auth.auth().currentUser?.uid else { return nil }
         
         let dateString = Self.dateFormatter.string(from: Date())
-        var newIdentifier = "\(otherUser.uid)_\(currentUid)"
+        var newIdentifier = "\(otherUser.uid)_\(currentUid)_\(dateString)"
         return newIdentifier
     }
 }

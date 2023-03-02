@@ -18,6 +18,8 @@ class SearchController: UITableViewController {
     
     let pageSize = 3
     
+    public var completion: (([String : String]) -> Void)?
+    
     private let config: SearchControllerConfiguration
     private var backgroundView: UIView!
     
@@ -98,10 +100,16 @@ class SearchController: UITableViewController {
         }
         UserService.shared.fetchUsers(startingAt: lastUser, pageSize: pageSize) { [weak self] users in
             self?.users.append(contentsOf: users)
+            self?.checkForDuplicates()
+            self?.tableView.tableFooterView = nil
         }
 //        UserService.shared.fetchUsers { users in
 //            self.users = users
 //        }
+    }
+    
+    func checkForDuplicates() {
+        users = users.uniqued()
     }
     
 //    MARK: Selectors
@@ -203,7 +211,7 @@ extension SearchController {
 
 extension SearchController: UISearchResultsUpdating {
     func updateSearchResults(for searchController: UISearchController) {
-        guard let searchText = searchController.searchBar.text?.lowercased() else { return }
+        guard let searchText = searchController.searchBar.text?.lowercased().replacingOccurrences(of: " ", with: "") else { return }
         
         filteredUsers = users.filter({ $0.username.contains(searchText) })
         
@@ -211,12 +219,31 @@ extension SearchController: UISearchResultsUpdating {
 }
 
 extension SearchController {
+    
+    private func createSpinnerFooter() -> UIView {
+        let footerView = UIView(frame: CGRect(x: 0, y: 0, width: view.frame.size.width, height: 100))
+        
+        let spinner = UIActivityIndicatorView()
+        spinner.center = footerView.center
+        footerView.addSubview(spinner)
+        spinner.startAnimating()
+        return footerView
+    }
+    
     override func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let offsetY = scrollView.contentOffset.y
-        let contentHeight = scrollView.contentSize.height
+        let position = scrollView.contentOffset.y
 
-        if offsetY > contentHeight - scrollView.frame.height {
+        if position > (tableView.contentSize.height - 100 - scrollView.frame.size.height) {
+            guard !UserService.shared.isPaginating else { return }
+            self.tableView.tableFooterView = createSpinnerFooter()
             fetchUsers()
         }
+    }
+}
+
+extension Sequence where Element: Hashable {
+    func uniqued() -> [Element] {
+        var set = Set<Element>()
+        return filter { set.insert($0).inserted }
     }
 }

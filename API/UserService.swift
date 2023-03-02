@@ -9,9 +9,10 @@ import Firebase
 
 typealias DatabaseCompletion = ((Error?, DatabaseReference) -> Void)
 
-struct UserService {
+class UserService {
     
     static let shared = UserService()
+    var isPaginating = false
     
     func fetchUser(uid: String, completion: @escaping(User) -> Void) {
         
@@ -152,33 +153,55 @@ struct UserService {
 //            completion(users)
 //        }
 //
+        isPaginating = true
         query.observeSingleEvent(of: .value) { snapshot in
             guard snapshot.exists() else {
                 completion([])
                 return
             }
             
-            snapshot.children.forEach { child in
-                guard let snapshot = child as? DataSnapshot else { return }
+            REF_USERS.observeSingleEvent(of: .value) { snapshot in
                 let uid = snapshot.key
+                guard let dict = snapshot.value as? [String : AnyObject] else { return }
+                let user = User(uid: uid, dictionary: dict)
+                users.append(user)
                 
-                self.fetchUser(uid: uid) { user in
-                    users.append(user)
-                    
-                    if users.count == snapshot.childrenCount {
-                        // reached end of data
-                        completion(users)
-                        return
-                    }
-                    
-                    if users.count == pageSize {
-                        completion(users)
-                        return
-                    }
-                    
-                    
+                if users.count == snapshot.childrenCount {
+                    // reached end of data
+                    completion(users)
+                    return
                 }
+                
+                if users.count == pageSize {
+                    completion(users)
+                    return
+                }
+                
+                completion(users)
+                self.isPaginating = false
             }
+            
+//            snapshot.children.forEach { child in
+//                guard let snapshot = child as? DataSnapshot else { return }
+//                let uid = snapshot.key
+//
+//                self.fetchUser(uid: uid) { user in
+//                    users.append(user)
+//
+//                    if users.count == snapshot.childrenCount {
+//                        // reached end of data
+//                        completion(users)
+//                        return
+//                    }
+//
+//                    if users.count == pageSize {
+//                        completion(users)
+//                        return
+//                    }
+//
+//
+//                }
+//            }
         }
     }
 

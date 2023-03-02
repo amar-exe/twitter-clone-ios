@@ -144,6 +144,14 @@ class RegisterController: UIViewController {
             if error != nil {
                 return
             }
+            
+            ConversationService.shared.insertUser(with: credentials) { bool in
+                if bool {
+                    print("inserted user")
+                    return
+                }
+                print("didn't insert user")
+            }
         }
         
         let alert = UIAlertController(title: nil, message: "You have been registered successfully", preferredStyle: .alert)
@@ -226,8 +234,14 @@ class RegisterController: UIViewController {
             return
         }
         
+        ConversationService.shared.userExists(with: emailText) { exists in
+            guard !exists else {
+                self.presentUIAlertController(withMessage: "User with this email address already exists!")
+                return
+            }
+            self.areFieldsValid = true
+        }
         
-        areFieldsValid = true
         return
     }
     

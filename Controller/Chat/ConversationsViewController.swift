@@ -8,7 +8,7 @@
 import UIKit
 import JGProgressHUD
 
-class ConversationsController: UIViewController {
+class ConversationsViewController: UIViewController {
     
     private let spinner = JGProgressHUD(style: .dark)
     
@@ -79,10 +79,6 @@ class ConversationsController: UIViewController {
                 case .failure(let error):
                     print("failed to fetch convos with error: \(error)")
                 }
-                
-                
-                
-            
             }
         }
         
@@ -109,7 +105,7 @@ class ConversationsController: UIViewController {
     }
 }
 
-extension ConversationsController: UITableViewDelegate, UITableViewDataSource {
+extension ConversationsViewController: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return conversations.count
     }
@@ -128,6 +124,7 @@ extension ConversationsController: UITableViewDelegate, UITableViewDataSource {
         UserService.shared.fetchUser(uid: model.otherUserUid) { [weak self] user in
             DispatchQueue.main.async {
                 let vc = ChatViewController(withUser: user, id: model.id)
+                vc.isNewConversation = false
                 vc.title = model.name
                 vc.navigationItem.largeTitleDisplayMode = .never
                 self?.navigationController?.pushViewController(vc, animated: true)

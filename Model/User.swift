@@ -8,8 +8,11 @@
 import Foundation
 import Firebase
 
-struct User: Equatable {
+struct User: Equatable, Hashable {
     
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(uid)
+    }
     static func == (lhs: User, rhs: User) -> Bool {
         return lhs.uid == rhs.uid
     }

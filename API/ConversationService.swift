@@ -21,6 +21,80 @@ public enum DatabaseError: Error {
 struct ConversationService {
     static let shared = ConversationService()
     
+    static func safeEmail(emailAddress: String) -> String {
+        var safeEmail = emailAddress.replacingOccurrences(of: ".", with: "-")
+        safeEmail = safeEmail.replacingOccurrences(of: "@", with: "-")
+        return safeEmail
+    }
+    
+    public func userExists(with email: String,
+                           completion: @escaping((Bool) -> Void)) {
+        let safeEmail = ConversationService.safeEmail(emailAddress: email)
+        DB_REF.child(safeEmail).observeSingleEvent(of: .value) { snapshot in
+            guard snapshot.value as? String != nil else {
+                completion(false)
+                return
+            }
+            
+            completion(true)
+        }
+     }
+    
+    public func insertUser(with user: AuthCredentials, completion: @escaping (Bool) -> Void) {
+        let safeEmail = ConversationService.safeEmail(emailAddress: user.email)
+        DB_REF.child(safeEmail).setValue([
+            "name" : user.name,
+            "username" : user.username
+        ]) { err, _ in
+            guard err == nil else {
+                print("insert user function: failed to write to database")
+                completion(false)
+                return
+            }
+            
+            DB_REF.child("chat-users").observeSingleEvent(of: .value) { snapshot, _  in
+                if var usersCollection = snapshot.value as? [[String : String]] {
+//                    append to user dictionary
+                    let newElement: [[String : String]] = [
+                        [
+                            "name": user.name,
+                            "email": safeEmail
+                        ]
+                    ]
+                    usersCollection.append(contentsOf: newElement)
+                    
+                    DB_REF.child("chat-users").setValue(newElement) { error, _ in
+                        guard error == nil else {
+                            completion(false)
+                            return
+                        }
+                        
+                        completion(true)
+                    }
+                }
+                else {
+//                    create that array
+                    let newCollection: [[String : String]] = [
+                        [
+                            "name": user.name,
+                            "email": safeEmail
+                        ]
+                    ]
+                    DB_REF.child("chat-users").setValue(newCollection) { error, _ in
+                        guard error == nil else {
+                            completion(false)
+                            return
+                        }
+                        
+                        completion(true)
+                    }
+                }
+            }
+            
+            completion(true)
+        }
+    }
+    
     private func finishCreatingConversation(name: String, conversationID: String, firstMessage: Message, completion: @escaping (Bool) -> Void) {
         guard let uid = Auth.auth().currentUser?.uid else {
             completion(false)
@@ -146,7 +220,7 @@ struct ConversationService {
             let recipient_newConversationData: [String : Any] = [
                 "id" : conversationId,
                 "other_user_uid" : uid,
-                "name" : "Self",
+                "name" : currentUser?.name ?? "Self",
                 "latest_message" : latestMessage
             ]
             
