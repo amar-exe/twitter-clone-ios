@@ -70,10 +70,11 @@ class ChatViewController: MessagesViewController {
     
     
     private var selfSender: Sender? {
-        guard let currentUid = Auth.auth().currentUser?.uid else { return nil }
+        guard let senderId = UserDefaults.standard.value(forKey: "email") as? String else { return nil }
+        let safeEmail = ConversationService.safeEmail(emailAddress: senderId)
         
         return Sender(photoURL: "",
-                      senderId: currentUid,
+                      senderId: safeEmail,
                       displayName: "Me")
     }
     
@@ -193,7 +194,8 @@ extension ChatViewController: InputBarAccessoryViewDelegate {
         else {
             guard let conversationId = conversationId, let name = self.title else { return }
             //        append to existing conversation
-            ConversationService.shared.sendMessage(to: conversationId, otherUserUid: otherUser.uid, name: name, newMessage: message) { success in
+            let otherUserSafeEmail = ConversationService.safeEmail(emailAddress: otherUser.email)
+            ConversationService.shared.sendMessage(to: conversationId, otherUserUid: otherUser.uid, otherUserSafeEmail: otherUserSafeEmail, name: name, newMessage: message) { success in
                 if success {
                     print("message appended")
                 }
@@ -202,14 +204,19 @@ extension ChatViewController: InputBarAccessoryViewDelegate {
                 }
             }
         }
+        inputBar.inputTextView.text = ""
 
     }
     
     private func createMessageId() -> String? {
-        guard let currentUid = Auth.auth().currentUser?.uid else { return nil }
+        guard let currentUserEmail = UserDefaults.standard.string(forKey: "email") else { return nil }
+        let currentUserSafeEmail = ConversationService.safeEmail(emailAddress: currentUserEmail)
+        
+        let otherUserSafeEmail = ConversationService.safeEmail(emailAddress: otherUser.email)
         
         let dateString = Self.dateFormatter.string(from: Date())
-        var newIdentifier = "\(otherUser.uid)_\(currentUid)_\(dateString)"
+        var newIdentifier = "\(otherUserSafeEmail)_\(currentUserSafeEmail)_\(dateString)"
+        print("created  message id: \(newIdentifier)")
         return newIdentifier
     }
 }

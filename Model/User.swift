@@ -7,6 +7,7 @@
 
 import Foundation
 import Firebase
+import FirebaseAuth
 
 struct User: Equatable, Hashable {
     
@@ -28,7 +29,7 @@ struct User: Equatable, Hashable {
     var conversations: [Conversation]?
     
     var isCurrentUser: Bool {
-        return Auth.auth().currentUser?.uid == uid
+        return FirebaseAuth.Auth.auth().currentUser?.uid == uid
     }
     
     init(uid: String, dictionary: [String : AnyObject]) {
@@ -49,6 +50,7 @@ struct User: Equatable, Hashable {
         
         if let conversation = dictionary["conversations"] as? [String : Any] {
              guard     let conversationId = dictionary["id"] as? String,
+                       let otherUserEmail = dictionary["other_user_email"] as? String,
                   let name = dictionary["name"] as? String,
                   let otherUserUid = dictionary["other_user_uid"] as? String,
                        let latestMessage = dictionary["latest_message"] as? [String : Any],
@@ -62,6 +64,7 @@ struct User: Equatable, Hashable {
             
             conversations?.append(Conversation(id: conversationId,
                                                name: name,
+                                               otherUserEmail: otherUserEmail,
                                                otherUserUid: otherUserUid,
                                                latestMessage: latestMessageObject))
         }

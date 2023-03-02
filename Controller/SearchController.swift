@@ -75,14 +75,18 @@ class SearchController: UITableViewController {
     //    MARK: API
     
     func fetchFirstBatch() {
-        UserService.shared.fetchCurrentUser { [self] currentUser in
-            UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
-                users.forEach { user in
-                    if user.uid != currentUser.uid {
-                        self?.users.append(user)
-                    }
-                }
-            }
+//        UserService.shared.fetchCurrentUser { [self] currentUser in
+//            UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
+//                users.forEach { user in
+//                    if user.uid != currentUser.uid {
+//                        self?.users.append(user)
+//                    }
+//                }
+//            }
+//        }
+        
+        UserService.shared.fetchUsers { users in
+            self.users = users.uniqued()
         }
         
     }

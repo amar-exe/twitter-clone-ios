@@ -100,7 +100,9 @@ class LoginController: UIViewController {
                 return
             }
             
-            UserDefaults.standard.set(result?.user.uid, forKey: "uid")
+            UserService.shared.fetchCurrentUser { user in
+                UserDefaults.standard.set(user.name, forKey: "name")
+            }
             UserDefaults.standard.set(email, forKey: "email")
             
             

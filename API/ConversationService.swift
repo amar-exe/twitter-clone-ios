@@ -6,6 +6,8 @@
 //
 
 import Firebase
+import FirebaseAuth
+import Foundation
 
 public enum DatabaseError: Error {
         case failedToFetch
@@ -24,7 +26,7 @@ struct ConversationService {
     static func safeEmail(emailAddress: String) -> String {
         var safeEmail = emailAddress.replacingOccurrences(of: ".", with: "-")
         safeEmail = safeEmail.replacingOccurrences(of: "@", with: "-")
-        return safeEmail
+        return safeEmail.lowercased()
     }
     
     public func userExists(with email: String,
@@ -63,7 +65,7 @@ struct ConversationService {
                     ]
                     usersCollection.append(contentsOf: newElement)
                     
-                    DB_REF.child("chat-users").setValue(newElement) { error, _ in
+                    DB_REF.child("chat-users").setValue(usersCollection) { error, _ in
                         guard error == nil else {
                             completion(false)
                             return
@@ -130,12 +132,19 @@ struct ConversationService {
             break
         }
         
+        guard let currentUserEmail = UserDefaults.standard.string(forKey: "email") else {
+            completion(false)
+            return
+        }
+        let currentUserSafeEmail = ConversationService.safeEmail(emailAddress: currentUserEmail).lowercased()
+        
         let collectionMessage: [String : Any] = [
             "id": firstMessage.messageId,
             "type": firstMessage.kind.messageKindString,
             "content": message,
             "date": dateString,
             "sender_uid": uid,
+            "sender_email": currentUserSafeEmail,
             "is_read": false,
             "name" : name
         ]
@@ -148,7 +157,7 @@ struct ConversationService {
         
         print("DEBUG: adding convo: \(conversationID)")
         
-        REF_CONVERSATIONS.child("\(conversationID)").setValue(value) { error, _ in
+        DB_REF.child("\(conversationID)").setValue(value) { error, _ in
             guard error == nil else {
                 completion(false)
                 return
@@ -159,14 +168,22 @@ struct ConversationService {
     
     /// Creates a new conversation with the specified user and sent message
     public func createNewConversation(with otherUser: User, firstMessage: Message, completion: @escaping (Bool) -> Void) {
-        guard let uid = Auth.auth().currentUser?.uid else { return }
-        var currentUser: User? = nil
-        UserService.shared.fetchCurrentUser { user in
-            currentUser = user
+        guard let uid = Auth.auth().currentUser?.uid else {
+            completion(false)
+            return
         }
+        guard let currentUserEmail = UserDefaults.standard.string(forKey: "email"),
+              let currentName = UserDefaults.standard.string(forKey: "name")
+        else {
+            completion(false)
+            return
+        }
+        let currentUserSafeEmail = ConversationService.safeEmail(emailAddress: currentUserEmail).lowercased()
+        print("DEBUG: currentSafeUserEmail u createNewConversation: \(currentUserSafeEmail)")
+        let otherUserSafeEmail = ConversationService.safeEmail(emailAddress: otherUser.email).lowercased()
         
-        let ref = REF_USERS.child(uid)
-        ref.observeSingleEvent(of: .value) { snapshot in
+        let ref = DB_REF.child("\(currentUserSafeEmail)")
+        ref.observeSingleEvent(of: .value) { snapshot  in
             guard var userNode = snapshot.value as? [String:Any] else {
                 completion(false)
                 print("DEBUG: User not found")
@@ -213,6 +230,7 @@ struct ConversationService {
             let newConversationData: [String : Any] = [
                 "id" : conversationId,
                 "other_user_uid" : otherUser.uid,
+                "other_user_email" : otherUserSafeEmail,
                 "name" : otherUser.name,
                 "latest_message" : latestMessage
             ]
@@ -220,20 +238,21 @@ struct ConversationService {
             let recipient_newConversationData: [String : Any] = [
                 "id" : conversationId,
                 "other_user_uid" : uid,
-                "name" : currentUser?.name ?? "Self",
+                "other_user_email" : currentUserSafeEmail,
+                "name" : currentName,
                 "latest_message" : latestMessage
             ]
             
 //            Update recipient conversation entry
-            ref.child("\(otherUser.uid)/conversations").observeSingleEvent(of: .value) { snapshot in
+            DB_REF.child("\(otherUserSafeEmail)/conversations").observeSingleEvent(of: .value) { snapshot in
                 if var conversations = snapshot.value as? [[String : Any]] {
 //                    append
                     conversations.append(recipient_newConversationData)
-                    ref.child("\(otherUser.uid)/conversations").setValue(conversations)
+                    DB_REF.child("\(otherUserSafeEmail)/conversations").setValue(conversations)
                 }
                 else {
 //                    create
-                    ref.child("\(otherUser.uid)/conversations").setValue([
+                    DB_REF.child("\(otherUserSafeEmail)/conversations").setValue([
                         recipient_newConversationData
                     ])
                 }
@@ -278,7 +297,8 @@ struct ConversationService {
     
     /// Fetches and returns all conversations for passed in user
     public func getAllConversations(forUser user: User, completion: @escaping (Result<[Conversation], Error>) -> Void) {
-        REF_USERS.child("\(user.uid)/conversations").observe(.value) { snapshot in
+        let currentUserSafeEmail = ConversationService.safeEmail(emailAddress: user.email)
+        DB_REF.child("\(currentUserSafeEmail)/conversations").observe(.value) { snapshot in
             guard let value = snapshot.value as? [[String : Any]] else {
                 completion(.failure(DatabaseError.failedToFetch))
                 return
@@ -287,11 +307,13 @@ struct ConversationService {
             let conversations: [Conversation] = value.compactMap ({ dictionary in
                 guard let conversationId = dictionary["id"] as? String,
                       let name = dictionary["name"] as? String,
+                      let otherUserEmail = dictionary["other_user_email"] as? String,
                       let otherUserUid = dictionary["other_user_uid"] as? String,
                       let latestMessage = dictionary["latest_message"] as? [String : Any],
+                      let isRead = latestMessage["is_read"] as? Bool,
                       let date = latestMessage["date"] as? String,
-                      let message = latestMessage["message"] as? String,
-                      let isRead = latestMessage["is_read"] as? Bool else { return nil }
+                      let message = latestMessage["message"] as? String
+                       else { return nil }
                 
                 let latestMessageObject = LatestMessage(date: date,
                                                         text: message,
@@ -299,10 +321,11 @@ struct ConversationService {
                 
                 return Conversation(id: conversationId,
                                     name: name,
+                                    otherUserEmail: otherUserEmail,
                                     otherUserUid: otherUserUid,
                                     latestMessage: latestMessageObject)
             })
-            
+            print("DEBUG: COMPLETION SUCCESS CALLED GETALLCONVERSATIONS: \(conversations)")
             completion(.success(conversations))
             
         }
@@ -310,7 +333,7 @@ struct ConversationService {
     
     /// Gets all messages for a given conversation
     public func getAllMessagesForConversation(with id: String, completion: @escaping (Result<[Message], Error>) -> Void) {
-        REF_CONVERSATIONS.child("\(id)/messages").observe(.value) { snapshot in
+        DB_REF.child("\(id)/messages").observe(.value) { snapshot in
             guard let value = snapshot.value as? [[String : Any]] else {
                 completion(.failure(DatabaseError.failedToFetch))
                 return
@@ -322,14 +345,20 @@ struct ConversationService {
                       let messageId = dictionary["id"] as? String,
                       let content = dictionary["content"] as? String,
                       let senderUid = dictionary["sender_uid"] as? String,
+                      let senderEmail = dictionary["sender_email"] as? String,
                       let dateString = dictionary["date"] as? String,
                       let type = dictionary["type"] as? String,
                       let date = ChatViewController.dateFormatter.date(from: dateString)
                 else { return nil }
                 
-                let sender = Sender(photoURL: "", senderId: senderUid, displayName: name)
+                let sender = Sender(photoURL: "",
+                                    senderId: senderEmail,
+                                    displayName: name)
                 
-                return Message(sender: sender, messageId: messageId, sentDate: date, kind: .text(content))
+                return Message(sender: sender,
+                               messageId: messageId,
+                               sentDate: date,
+                               kind: .text(content))
                         
             })
             
@@ -339,12 +368,16 @@ struct ConversationService {
     }
     
     /// Sends a message with target conversation and message
-    public func sendMessage(to conversationId: String, otherUserUid: String, name: String, newMessage: Message, completion: @escaping (Bool) -> Void) {
+    public func sendMessage(to conversationId: String, otherUserUid: String, otherUserSafeEmail: String, name: String, newMessage: Message, completion: @escaping (Bool) -> Void) {
 //        add new message to messages
 //        update sender latest message
 //        update recipient latest message
         guard let uid = Auth.auth().currentUser?.uid else { return }
-        REF_CONVERSATIONS.child("\(conversationId)/messages").observeSingleEvent(of: .value) { snapshot, _  in
+        
+        guard let currentUserEmail = UserDefaults.standard.value(forKey: "email") as? String else { return }
+        let currentUserSafeEmail = ConversationService.safeEmail(emailAddress: currentUserEmail)
+        
+        DB_REF.child("\(conversationId)/messages").observeSingleEvent(of: .value) { snapshot, _  in
             guard var currentMessages = snapshot.value as? [[String : Any]] else {
                 completion(false)
                 return
@@ -384,19 +417,20 @@ struct ConversationService {
                 "content": message,
                 "date": dateString,
                 "sender_uid": uid,
+                "sender_email": currentUserSafeEmail,
                 "is_read": false,
                 "name" : name
             ]
             
             currentMessages.append(newMessageEntry)
             
-            REF_CONVERSATIONS.child("\(conversationId)/messages").setValue(currentMessages) { error, _ in
+            DB_REF.child("\(conversationId)/messages").setValue(currentMessages) { error, _ in
                 guard error == nil else {
                     completion(false)
                     return
                 }
                 
-                REF_USERS.child("\(uid)/conversations").observeSingleEvent(of: .value) { snapshot, _  in
+                DB_REF.child("\(currentUserSafeEmail)/conversations").observeSingleEvent(of: .value) { snapshot, _  in
                     guard var currentUserConversations = snapshot.value as? [[String : Any]] else {
                         completion(false)
                         return
@@ -426,7 +460,7 @@ struct ConversationService {
                             return
                         }
                         currentUserConversations[position] = finalConversation
-                        REF_USERS.child("\(conversationId)/conversations").setValue(currentUserConversations) { error, _ in
+                        DB_REF.child("\(currentUserSafeEmail)/conversations").setValue(currentUserConversations) { error, _ in
                             guard error == nil else {
                                  completion(false)
                                 return
@@ -438,7 +472,7 @@ struct ConversationService {
                 }
                 
 //                update other user latest message
-                REF_USERS.child("\(otherUserUid)/conversations").observeSingleEvent(of: .value) { snapshot, _  in
+                DB_REF.child("\(otherUserSafeEmail)/conversations").observeSingleEvent(of: .value) { snapshot, _  in
                     guard var otherUserConversations = snapshot.value as? [[String : Any]] else {
                         completion(false)
                         return
@@ -468,7 +502,7 @@ struct ConversationService {
                             return
                         }
                         otherUserConversations[position] = finalConversation
-                        REF_USERS.child("\(otherUserUid)/conversations").setValue(otherUserConversations) { error, _ in
+                        DB_REF.child("\(otherUserSafeEmail)/conversations").setValue(otherUserConversations) { error, _ in
                             guard error == nil else {
                                  completion(false)
                                 return
