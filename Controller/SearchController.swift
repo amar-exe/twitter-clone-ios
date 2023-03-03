@@ -26,7 +26,6 @@ class SearchController: UITableViewController {
     private var users = [User]() {
         didSet {
             backgroundView.isHidden = !users.isEmpty
-            tableView.reloadData()
         }
     }
     
@@ -72,22 +71,32 @@ class SearchController: UITableViewController {
         navigationController?.navigationBar.isHidden = false
     }
     
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        users.removeAll()
+    }
+    
+    override func didMove(toParent parent: UIViewController?) {
+        super.didMove(toParent: parent)
+        users.removeAll()
+    }
+    
     //    MARK: API
     
     func fetchFirstBatch() {
-//        UserService.shared.fetchCurrentUser { [self] currentUser in
-//            UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
-//                users.forEach { user in
-//                    if user.uid != currentUser.uid {
-//                        self?.users.append(user)
-//                    }
-//                }
-//            }
-//        }
-        
-        UserService.shared.fetchUsers { users in
-            self.users = users.uniqued()
+        UserService.shared.fetchCurrentUser { [self] currentUser in
+            UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
+                users.forEach { user in
+                    if user.uid != currentUser.uid {
+                        self?.users.append(user)
+                    }
+                }
+            }
         }
+        
+//        UserService.shared.fetchUsers { users in
+//            self.users = users.uniqued()
+//        }
         
     }
     
@@ -95,6 +104,7 @@ class SearchController: UITableViewController {
         UserService.shared.fetchCurrentUser { [weak self] user in
             self?.users.append(user)
             print("DEBUG: Current user in search controller \(user)")
+            self?.tableView.tableFooterView = nil
         }
     }
     
@@ -103,9 +113,19 @@ class SearchController: UITableViewController {
             return
         }
         UserService.shared.fetchUsers(startingAt: lastUser, pageSize: pageSize) { [weak self] users in
-            self?.users.append(contentsOf: users)
-            self?.checkForDuplicates()
-            self?.tableView.tableFooterView = nil
+            if lastUser.uid != users.first?.uid {
+                self?.tableView.tableFooterView = self?.createSpinnerFooter()
+                self?.users.append(contentsOf: users)
+                let noDuplicates = self?.users.uniqued()
+                if noDuplicates?.count != self?.users.count {
+                    self?.users = noDuplicates ?? users
+                    self?.tableView.tableFooterView = nil
+                    DispatchQueue.main.async {
+                        self?.tableView.reloadData()
+                    }
+                }
+            }
+            
         }
 //        UserService.shared.fetchUsers { users in
 //            self.users = users
@@ -239,15 +259,8 @@ extension SearchController {
 
         if position > (tableView.contentSize.height - 100 - scrollView.frame.size.height) {
             guard !UserService.shared.isPaginating else { return }
-            self.tableView.tableFooterView = createSpinnerFooter()
             fetchUsers()
+            self.tableView.tableFooterView = nil
         }
-    }
-}
-
-extension Sequence where Element: Hashable {
-    func uniqued() -> [Element] {
-        var set = Set<Element>()
-        return filter { set.insert($0).inserted }
     }
 }

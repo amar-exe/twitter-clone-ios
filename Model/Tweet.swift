@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct Tweet {
+struct Tweet: Hashable {
     let caption: String
     let tweetID: String
     var likes: Int
@@ -19,6 +19,10 @@ struct Tweet {
     
     var isReply: Bool {
         return replyingTo != nil
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(tweetID)
     }
     
     init(user: User, tweetID: String, dictionary: [String : Any]) {
