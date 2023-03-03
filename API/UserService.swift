@@ -9,9 +9,10 @@ import Firebase
 
 typealias DatabaseCompletion = ((Error?, DatabaseReference) -> Void)
 
-struct UserService {
+class UserService {
     
     static let shared = UserService()
+    var isPaginating = false
     
     func fetchUser(uid: String, completion: @escaping(User) -> Void) {
         
@@ -19,6 +20,17 @@ struct UserService {
             guard let dictionary = snapshot.value as? [String : AnyObject] else { return }
             
             let user = User(uid: uid, dictionary: dictionary)
+            completion(user)
+        }
+    }
+    
+    func fetchCurrentUser(completion: @escaping(User) -> Void) {
+        guard let currentUid = Auth.auth().currentUser?.uid else { return }
+        
+        REF_USERS.child(currentUid).observeSingleEvent(of: .value) { snapshot in
+            guard let dictionary = snapshot.value as? [String : AnyObject] else { return }
+            
+            let user = User(uid: currentUid, dictionary: dictionary)
             completion(user)
         }
     }
@@ -105,5 +117,93 @@ struct UserService {
             self.fetchUser(uid: uid, completion: completion)
         }
     }
+    
+    func fetchUsers(startingAt startUser: User, pageSize: Int, completion: @escaping ([User]) -> Void) {
+        var users = [User]()
+        let query = REF_USERS.queryOrderedByKey().queryStarting(atValue: startUser.uid).queryLimited(toFirst: UInt(pageSize))
+        query.observeSingleEvent(of: .value) { snapshot in
+            guard let children = snapshot.children.allObjects as? [DataSnapshot] else {
+                completion([])
+                return
+            }
+            for child in children {
+                let uid = child.key
+                guard let dict = child.value as? [String: AnyObject] else { continue }
+                let user = User(uid: uid, dictionary: dict)
+                users.append(user)
+            }
+            completion(users)
+        }
+    }
+    
+    func fetchUsers(pageSize: Int, completion: @escaping ([User]) -> Void) {
+        var users = [User]()
+        let query = REF_USERS.queryOrderedByKey().queryLimited(toFirst: UInt(pageSize))
+//        query.observeSingleEvent(of: .value) { snapshot in
+//            guard let children = snapshot.children.allObjects as? [DataSnapshot] else {
+//                completion([])
+//                return
+//            }
+//            for child in children {
+//                let uid = child.key
+//                guard let dict = child.value as? [String: AnyObject] else { continue }
+//                let user = User(uid: uid, dictionary: dict)
+//                users.append(user)
+//            }
+//            completion(users)
+//        }
+//
+        isPaginating = true
+        query.observeSingleEvent(of: .value) { snapshot in
+            guard snapshot.exists() else {
+                completion([])
+                return
+            }
+            
+            REF_USERS.observeSingleEvent(of: .value) { snapshot in
+                let uid = snapshot.key
+                guard let dict = snapshot.value as? [String : AnyObject] else { return }
+                let user = User(uid: uid, dictionary: dict)
+                users.append(user)
+                
+                if users.count == snapshot.childrenCount {
+                    // reached end of data
+                    completion(users)
+                    return
+                }
+                
+                if users.count == pageSize {
+                    completion(users)
+                    return
+                }
+                
+                completion(users)
+                self.isPaginating = false
+            }
+            
+//            snapshot.children.forEach { child in
+//                guard let snapshot = child as? DataSnapshot else { return }
+//                let uid = snapshot.key
+//
+//                self.fetchUser(uid: uid) { user in
+//                    users.append(user)
+//
+//                    if users.count == snapshot.childrenCount {
+//                        // reached end of data
+//                        completion(users)
+//                        return
+//                    }
+//
+//                    if users.count == pageSize {
+//                        completion(users)
+//                        return
+//                    }
+//
+//
+//                }
+//            }
+        }
+    }
+
     
 }
