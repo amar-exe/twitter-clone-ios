@@ -70,7 +70,16 @@ class ProfileController: UICollectionViewController {
             self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
             self.checkIfUserLikedTweets()
             self.collectionView.reloadData()
-        }
+                }
+        
+//        TweetService.shared.fetchTweets(forUser: user, limit: UInt(3)) { tweets in
+//            self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
+////            self.tweets = self.tweets.uniqued()
+//            self.checkIfUserLikedTweets()
+//            DispatchQueue.main.async {
+//                self.collectionView.reloadData()
+//            }
+//        }
     }
     
     func fetchReplies() {

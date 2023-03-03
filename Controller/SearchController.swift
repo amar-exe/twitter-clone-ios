@@ -71,16 +71,6 @@ class SearchController: UITableViewController {
         navigationController?.navigationBar.isHidden = false
     }
     
-    override func viewDidDisappear(_ animated: Bool) {
-        super.viewDidDisappear(animated)
-        users.removeAll()
-    }
-    
-    override func didMove(toParent parent: UIViewController?) {
-        super.didMove(toParent: parent)
-        users.removeAll()
-    }
-    
     //    MARK: API
     
     func fetchFirstBatch() {
@@ -103,7 +93,7 @@ class SearchController: UITableViewController {
     func fetchCurrentUser() {
         UserService.shared.fetchCurrentUser { [weak self] user in
             self?.users.append(user)
-            print("DEBUG: Current user in search controller \(user)")
+            self?.tableView.reloadData()
             self?.tableView.tableFooterView = nil
         }
     }
@@ -204,10 +194,10 @@ extension SearchController {
         let cell = tableView.dequeueReusableCell(withIdentifier: UserCell.reuseIdentifier, for: indexPath) as! UserCell
         
         if indexPath.row == 0 && config == .userSearch{
-            UserService.shared.fetchCurrentUser { user in
-                cell.user = user
-                
-            }
+//            UserService.shared.fetchCurrentUser { user in
+//                cell.user = user
+//            }
+            cell.user = users[0]
             return cell
         }
         

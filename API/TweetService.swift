@@ -127,6 +127,44 @@ struct TweetService {
         }
     }
     
+    func fetchTweets(forUser user: User, startingAfter tweet: Tweet? = nil, limit: UInt = 20, completion: @escaping([Tweet]) -> Void) {
+        var query = REF_USER_TWEETS.child(user.uid).queryOrderedByKey().queryLimited(toLast: limit)
+        
+        if let lastTweet = tweet {
+//            query = query.queryOrderedByKey().queryStarting(atValue: lastTweet.tweetID).queryLimited(toLast: limit) as! DatabaseReference
+            query = REF_USER_TWEETS.child(user.uid).queryOrderedByKey().queryEnding(atValue: lastTweet.tweetID).queryLimited(toLast: limit)
+        }
+        
+        query.observe(.childAdded) { snapshot in
+            guard snapshot.exists() else {
+                completion([])
+                return
+            }
+            
+            var tweets = [Tweet]()
+            
+            snapshot.children.forEach { child in
+                guard let snapshot = child as? DataSnapshot else { return }
+                let tweetID = snapshot.key
+                
+                self.fetchTweet(withTweetID: tweetID) { tweet in
+                    tweets.append(tweet)
+                    
+                    if tweets.count == snapshot.childrenCount {
+                        // reached end of data
+                        completion(tweets)
+                        return
+                    }
+                    
+                    if tweets.count == limit {
+                        completion(tweets)
+                        return
+                    }
+                }
+            }
+        }
+    }
+    
     func fetchReplies(forUser user: User, completion: @escaping([Tweet]) -> Void) {
         var replies = [Tweet]()
         
