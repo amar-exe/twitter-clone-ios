@@ -12,6 +12,18 @@ class FeedController: UICollectionViewController {
     
 //    MARK: Properties
     
+    private lazy var profileImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.setDimensions(width: 32, height: 32)
+        iv.layer.cornerRadius = 32 / 2
+        iv.layer.masksToBounds = true
+        iv.isUserInteractionEnabled = true
+        let configuration = UIImage.SymbolConfiguration(hierarchicalColor: UIColor.darkGray)
+        iv.image = UIImage(systemName: "person.circle.fill", withConfiguration: configuration)
+        return iv
+    }()
+    
+    
     let itemsPerPage: UInt = 3
     var pageNum = 0
     
@@ -19,7 +31,7 @@ class FeedController: UICollectionViewController {
     
     var user: User? {
         didSet {
-            configureLeftBarButton()
+            setImageForLeftBarButtonItem()
         }
     }
     
@@ -40,6 +52,8 @@ class FeedController: UICollectionViewController {
         self.collectionView!.dataSource = self
 
         configureUI()
+        
+        configureLeftBarButton()
         fetchTweets()
         
         configureTableBackgroundView()
@@ -136,20 +150,18 @@ class FeedController: UICollectionViewController {
         collectionView.refreshControl = refreshControl
     }
     
-    func configureLeftBarButton() {
+    func setImageForLeftBarButtonItem() {
         guard let user = user else { return }
-        
-        let profileImageView = UIImageView()
-        profileImageView.setDimensions(width: 32, height: 32)
-        profileImageView.layer.cornerRadius = 32 / 2
-        profileImageView.layer.masksToBounds = true
-        profileImageView.isUserInteractionEnabled = true
         
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleProfileImageTap))
         profileImageView.addGestureRecognizer(tap)
         
         profileImageView.sd_setImage(with: user.profileImageUrl)
         
+//        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: profileImageView)
+    }
+    
+    func configureLeftBarButton() {
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: profileImageView)
     }
 }
