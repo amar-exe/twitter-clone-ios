@@ -189,6 +189,7 @@ extension FeedController {
             TweetService.shared.fetchTweets(startingAfter: lastTweet, limit: itemsPerPage, completion: { tweets in
                 guard tweets.first?.tweetID != self.tweets.last?.tweetID else { return }
                 self.tweets.append(contentsOf: tweets.sorted(by: { $0.timestamp > $1.timestamp }))
+                self.tweets = self.tweets.uniqued()
                 self.checkIfUserLikedTweets()
                 self.collectionView.refreshControl?.endRefreshing()
             })
