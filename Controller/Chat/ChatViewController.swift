@@ -170,9 +170,6 @@ extension ChatViewController: InputBarAccessoryViewDelegate {
         let selfSender = self.selfSender,
         let messageId = createMessageId() else { return }
         
-        print("DEBUG: Sending message: \(text)")
-        
-        
         let message = Message(sender: selfSender,
                               messageId: messageId,
                               sentDate: Date(),

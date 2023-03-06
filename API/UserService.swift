@@ -126,12 +126,12 @@ class UserService {
                 completion([])
                 return
             }
-//            print("MEGA DEBUG: Children count before uniqued(): \(children.count)")
+
             children = children.uniqued()
-//            print("MEGA DEBUG: Children count after uniqued(): \(children.count)")
+
             for child in children {
                 let uid = child.key
-//                print("MEGA DEBUG: uid for each user: \(uid)")
+
                 guard let dict = child.value as? [String: AnyObject] else { continue }
                 if uid != startUser.uid {
                     let user = User(uid: uid, dictionary: dict)
@@ -186,7 +186,6 @@ class UserService {
                     completion(users)
                     return
                 }
-                print("ULTRA DEBUG: The completion being sent: \(users)")
                 users = users.uniqued()
                 completion(users)
                 self.isPaginating = false

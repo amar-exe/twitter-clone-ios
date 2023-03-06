@@ -103,19 +103,18 @@ class SearchController: UITableViewController {
             return
         }
         UserService.shared.fetchUsers(startingAt: lastUser, pageSize: pageSize) { [weak self] users in
-            if lastUser.uid != users.first?.uid {
+//            if lastUser.uid != users.first?.uid {
                 self?.tableView.tableFooterView = self?.createSpinnerFooter()
                 self?.users.append(contentsOf: users)
                 let noDuplicates = self?.users.uniqued()
-                if noDuplicates?.count != self?.users.count {
+//                if noDuplicates?.count != self?.users.count {
                     self?.users = noDuplicates ?? users
                     self?.tableView.tableFooterView = nil
                     DispatchQueue.main.async {
                         self?.tableView.reloadData()
                     }
-                }
-            }
-            
+//                }
+//            }
         }
 //        UserService.shared.fetchUsers { users in
 //            self.users = users
@@ -166,7 +165,7 @@ class SearchController: UITableViewController {
         navigationItem.title = config == .messages ? "New Message" : "Explore"
         
         tableView.register(UserCell.self, forCellReuseIdentifier: UserCell.reuseIdentifier)
-        tableView.rowHeight = 50
+        tableView.register(SelfUserCell.self, forCellReuseIdentifier: SelfUserCell.reuseIdentifier)
         tableView.separatorStyle = .none
         
         if config == .messages {
@@ -186,24 +185,30 @@ class SearchController: UITableViewController {
 }
 
 extension SearchController {
+    
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if indexPath.row == 0 && config == .userSearch{
+            return 80
+        }
+        return 50
+    }
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return inSearchMode ? filteredUsers.count : users.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: UserCell.reuseIdentifier, for: indexPath) as! UserCell
         
         if indexPath.row == 0 && config == .userSearch{
-//            UserService.shared.fetchCurrentUser { user in
-//                cell.user = user
-//            }
+            let cell = tableView.dequeueReusableCell(withIdentifier: SelfUserCell.reuseIdentifier, for: indexPath) as! SelfUserCell
             cell.user = users[0]
             return cell
         }
         
+        let cell = tableView.dequeueReusableCell(withIdentifier: UserCell.reuseIdentifier, for: indexPath) as! UserCell
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
-        
         cell.user = user
+        
         return cell
     }
     

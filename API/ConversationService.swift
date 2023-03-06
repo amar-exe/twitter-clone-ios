@@ -155,8 +155,6 @@ struct ConversationService {
             ]
         ]
         
-        print("DEBUG: adding convo: \(conversationID)")
-        
         DB_REF.child("\(conversationID)").setValue(value) { error, _ in
             guard error == nil else {
                 completion(false)
@@ -179,14 +177,12 @@ struct ConversationService {
             return
         }
         let currentUserSafeEmail = ConversationService.safeEmail(emailAddress: currentUserEmail).lowercased()
-        print("DEBUG: currentSafeUserEmail u createNewConversation: \(currentUserSafeEmail)")
         let otherUserSafeEmail = ConversationService.safeEmail(emailAddress: otherUser.email).lowercased()
         
         let ref = DB_REF.child("\(currentUserSafeEmail)")
         ref.observeSingleEvent(of: .value) { snapshot  in
             guard var userNode = snapshot.value as? [String:Any] else {
                 completion(false)
-                print("DEBUG: User not found")
                 return
             }
             
@@ -325,7 +321,6 @@ struct ConversationService {
                                     otherUserUid: otherUserUid,
                                     latestMessage: latestMessageObject)
             })
-            print("DEBUG: COMPLETION SUCCESS CALLED GETALLCONVERSATIONS: \(conversations)")
             completion(.success(conversations))
             
         }

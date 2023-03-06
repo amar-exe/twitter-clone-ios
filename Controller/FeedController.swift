@@ -177,8 +177,6 @@ extension FeedController {
         
         cell.delegate = self
         cell.tweet = tweets[indexPath.row]
-        print("DEBUG: Tweet user: \(tweets[indexPath.row].user)")
-        print("DEBUG: Tweet is: \(tweets[indexPath.row])")
         
         return cell
     }
