@@ -158,6 +158,12 @@ class RegisterController: UIViewController {
         let alertAction = UIAlertAction(title: "Ok", style: .default) { _ in
             self.dismiss(animated: true)
             
+            do {
+                try Auth.auth().signOut()
+            } catch let error {
+                print("failed to signout with error \(error.localizedDescription)")
+            }
+            
             AuthService.shared.logUserIn(withEmail: email, password: password) { result, error in
                 if let error = error {
                     self.presentUIAlertController(withMessage: error.localizedDescription)
@@ -177,7 +183,9 @@ class RegisterController: UIViewController {
                 
                 tab.authUserAndConfigureUI()
                 
-                self.dismiss(animated: true)
+                self.dismiss(animated: true) {
+                    self.dismiss(animated: true)
+                }
             }
             
 //            guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
