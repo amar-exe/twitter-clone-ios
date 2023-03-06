@@ -170,7 +170,7 @@ class SearchController: UITableViewController {
 extension SearchController {
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        if indexPath.row == 0 {
+        if indexPath.row == 0 && !inSearchMode {
             return 80
         }
         return 50
@@ -182,7 +182,7 @@ extension SearchController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        if indexPath.row == 0 {
+        if indexPath.row == 0 && !inSearchMode {
             let cell = tableView.dequeueReusableCell(withIdentifier: SelfUserCell.reuseIdentifier, for: indexPath) as! SelfUserCell
             cell.user = users[0]
             return cell
@@ -197,10 +197,12 @@ extension SearchController {
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
-        if indexPath.row == 0 && config == .messages {
+        if indexPath.row == 0 && config == .messages && !inSearchMode {
             return
         }
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
+        users.append(user)
+        self.users = self.users.uniqued()
         let vc = config == .messages ? createNewConversation(withUser: user) : ProfileController(user: user)
         navigationController?.pushViewController(vc, animated: true)
         
@@ -220,6 +222,15 @@ extension SearchController: UISearchResultsUpdating {
         guard let searchText = searchController.searchBar.text?.lowercased().replacingOccurrences(of: " ", with: "") else { return }
         
         filteredUsers = users.filter({ $0.username.contains(searchText) })
+        
+        if filteredUsers.isEmpty {
+            tableView.tableFooterView = createSpinnerFooter()
+            backgroundView.isHidden = true
+            UserService.shared.fetchUser(byUsernameString: searchText) { users in
+                self.tableView.tableFooterView = nil
+                self.filteredUsers = users
+            }
+        }
         
     }
 }

@@ -214,6 +214,31 @@ class UserService {
 //            }
         }
     }
+    
+    func fetchUser(byUsernameString username: String, completion: @escaping([User]) -> Void) {
+        var users = [User]()
+        
+        let query = REF_USERS.queryOrdered(byChild: "username").queryEqual(toValue: username)
+        query.observeSingleEvent(of: .value) { snapshot, _  in
+            guard var children = snapshot.children.allObjects as? [DataSnapshot] else {
+                completion([])
+                return
+            }
+            
+            for child in children {
+                let uid = child.key
+                
+                guard let dict = child.value as? [String: AnyObject] else { continue }
+                
+                let user = User(uid: uid, dictionary: dict)
+                users.append(user)
+            }
+            users = users.uniqued()
+            completion(users)
+            
+            
+        }
+    }
 
     
 }
