@@ -57,7 +57,7 @@ class SearchController: UITableViewController {
         super.viewDidLoad()
         
         configureUI()
-        config == .userSearch ? fetchCurrentUser() : fetchFirstBatch()
+        fetchCurrentUser()
         configureSearchController()
         configureTableBackgroundView()
         configureRefreshControl()
@@ -72,23 +72,6 @@ class SearchController: UITableViewController {
     }
     
     //    MARK: API
-    
-    func fetchFirstBatch() {
-        UserService.shared.fetchCurrentUser { [self] currentUser in
-            UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
-                users.forEach { user in
-                    if user.uid != currentUser.uid {
-                        self?.users.append(user)
-                    }
-                }
-            }
-        }
-        
-//        UserService.shared.fetchUsers { users in
-//            self.users = users.uniqued()
-//        }
-        
-    }
     
     func fetchCurrentUser() {
         UserService.shared.fetchCurrentUser { [weak self] user in
@@ -187,7 +170,7 @@ class SearchController: UITableViewController {
 extension SearchController {
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        if indexPath.row == 0 && config == .userSearch{
+        if indexPath.row == 0 {
             return 80
         }
         return 50
@@ -199,7 +182,7 @@ extension SearchController {
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
-        if indexPath.row == 0 && config == .userSearch{
+        if indexPath.row == 0 {
             let cell = tableView.dequeueReusableCell(withIdentifier: SelfUserCell.reuseIdentifier, for: indexPath) as! SelfUserCell
             cell.user = users[0]
             return cell
@@ -213,6 +196,10 @@ extension SearchController {
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        if indexPath.row == 0 && config == .messages {
+            return
+        }
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
         let vc = config == .messages ? createNewConversation(withUser: user) : ProfileController(user: user)
         navigationController?.pushViewController(vc, animated: true)
