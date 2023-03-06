@@ -209,11 +209,32 @@ extension SearchController {
     }
     
     func createNewConversation(withUser user: User) -> ChatViewController {
-        let vc = ChatViewController(withUser: user, id: nil)
+        var vc = ChatViewController(withUser: user, id: nil)
         vc.isNewConversation = true
         vc.title = user.name
+        let (isNewConvo, convo) = isNewConversationTest(withUser: user)
+        if !isNewConvo && convo != nil {
+            vc.isNewConversation = false
+            vc = ChatViewController(withUser: user, id: convo?.id)
+            vc.title = convo?.name
+        }
         vc.navigationItem.largeTitleDisplayMode = .never
         return vc
+    }
+    
+    func isNewConversationTest(withUser user: User) -> (Bool, Conversation?) {
+        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+        }) else { return (true, nil) }
+        
+        guard let tab = window.rootViewController as? MainTabController else { return (true, nil) }
+        guard let conversationsArray = tab.getConversations() else { return (true, nil) }
+        
+        for conversation in conversationsArray {
+            if conversation.otherUserUid == user.uid {
+                return (false, conversation)
+            }
+        }
+        return (true, nil)
     }
 }
 
