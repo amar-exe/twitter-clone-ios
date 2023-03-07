@@ -137,7 +137,8 @@ extension EditProfileController: EditProfileCellDelegate {
             guard let username = cell.infoTextField.text else { return }
             user.username = username
         case .bio:
-            user.bio = cell.bioTextView.text
+            guard let bio = cell.bioTextView.text else { return }
+            user.bio = bio
         }
     }
 }

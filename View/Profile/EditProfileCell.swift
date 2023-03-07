@@ -93,5 +93,6 @@ class EditProfileCell: UITableViewCell {
         bioTextView.placeholderLabel.isHidden = viewModel.shouldHidePlaceholderLabel
         
         infoTextField.text = viewModel.optionValue
+        bioTextView.text = viewModel.optionValue
     }
 }
