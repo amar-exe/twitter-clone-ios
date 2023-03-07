@@ -25,14 +25,14 @@ class SearchController: UITableViewController {
     
     private var users = [User]() {
         didSet {
-            backgroundView.isHidden = !users.isEmpty
+            backgroundView.isHidden = !filteredUsers.isEmpty || !users.isEmpty
         }
     }
     
     private var filteredUsers = [User]() {
         didSet {
             tableView.reloadData()
-            backgroundView.isHidden = !filteredUsers.isEmpty
+            backgroundView.isHidden = !filteredUsers.isEmpty || !users.isEmpty && !inSearchMode
         }
     }
     

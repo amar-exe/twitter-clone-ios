@@ -33,7 +33,12 @@ class LoginController: UIViewController {
         return view
     }()
     
-    private let emailTextField: UITextField = Utilities().textField(withPlaceholder: "Email")
+    private let emailTextField: UITextField = {
+        let tf = Utilities().textField(withPlaceholder: "Email")
+        tf.autocapitalizationType = .none
+        tf.autocorrectionType = .no
+        return tf
+    }()
     
     private let passwordTextField: UITextField = {
         let tf = Utilities().textField(withPlaceholder: "Password")

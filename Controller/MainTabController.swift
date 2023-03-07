@@ -50,6 +50,7 @@ class MainTabController: UITabBarController {
         
         self.view.accessibilityIdentifier = "MainTabController"
         
+        fetchUser()
         authUserAndConfigureUI()
         updateTabBarAppearance()
         configureViewControllers()
@@ -74,9 +75,11 @@ class MainTabController: UITabBarController {
                 self.present(vc, animated: true)
             }
         } else {
-            configureViewControllers()
-            configureUI()
-            fetchUser() 
+            DispatchQueue.main.async {
+                self.fetchUser()
+                self.configureViewControllers()
+                self.configureUI()
+            }
         }
     }
     
