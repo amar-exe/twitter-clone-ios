@@ -132,6 +132,7 @@ extension ProfileController {
         let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: ProfileHeader.reuseIdentifier, for: indexPath) as! ProfileHeader
         header.user = user
         header.delegate = self
+        header.backgroundColor = .red
         return header
     }
     
@@ -161,7 +162,7 @@ extension ProfileController: UICollectionViewDelegateFlowLayout {
         var height: CGFloat = 300
         
         if user.bio != nil {
-            height += 50
+            height += user.bio?.height(withConstrainedWidth: view.frame.width - 40, font: .systemFont(ofSize: 16)) ?? 50
         }
         
         return CGSize(width: view.frame.width, height: height)
