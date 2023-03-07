@@ -132,7 +132,6 @@ extension ProfileController {
         let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: ProfileHeader.reuseIdentifier, for: indexPath) as! ProfileHeader
         header.user = user
         header.delegate = self
-        header.backgroundColor = .red
         return header
     }
     
