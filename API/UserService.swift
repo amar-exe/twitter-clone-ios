@@ -218,7 +218,8 @@ class UserService {
     func fetchUser(byUsernameString username: String, completion: @escaping([User]) -> Void) {
         var users = [User]()
         
-        let query = REF_USERS.queryOrdered(byChild: "username").queryEqual(toValue: username)
+//        let query = REF_USERS.queryOrdered(byChild: "username").queryEqual(toValue: username)
+        let query = REF_USERS.queryOrdered(byChild: "username").queryStarting(atValue: username).queryEnding(atValue: username + "\u{f8ff}")
         query.observeSingleEvent(of: .value) { snapshot, _  in
             guard var children = snapshot.children.allObjects as? [DataSnapshot] else {
                 completion([])
