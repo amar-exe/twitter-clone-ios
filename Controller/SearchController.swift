@@ -69,6 +69,7 @@ class SearchController: UITableViewController {
         super.viewWillAppear(animated)
         navigationController?.navigationBar.barStyle = .default
         navigationController?.navigationBar.isHidden = false
+        navigationItem.title = config == .messages ? "New Message" : "Explore"
     }
     
     //    MARK: API
