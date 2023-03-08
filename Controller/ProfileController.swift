@@ -8,7 +8,6 @@
 import UIKit
 import Firebase
 import ExpandableLabel
-import TTTAttributedLabel
 
 protocol ProfileControllerDelegate: AnyObject {
     func updateUser(withUser user: User)
