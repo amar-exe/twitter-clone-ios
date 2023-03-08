@@ -155,8 +155,6 @@ struct ConversationService {
             ]
         ]
         
-        print("DEBUG: adding convo: \(conversationID)")
-        
         DB_REF.child("\(conversationID)").setValue(value) { error, _ in
             guard error == nil else {
                 completion(false)
@@ -179,14 +177,12 @@ struct ConversationService {
             return
         }
         let currentUserSafeEmail = ConversationService.safeEmail(emailAddress: currentUserEmail).lowercased()
-        print("DEBUG: currentSafeUserEmail u createNewConversation: \(currentUserSafeEmail)")
         let otherUserSafeEmail = ConversationService.safeEmail(emailAddress: otherUser.email).lowercased()
         
         let ref = DB_REF.child("\(currentUserSafeEmail)")
         ref.observeSingleEvent(of: .value) { snapshot  in
             guard var userNode = snapshot.value as? [String:Any] else {
                 completion(false)
-                print("DEBUG: User not found")
                 return
             }
             
@@ -325,7 +321,6 @@ struct ConversationService {
                                     otherUserUid: otherUserUid,
                                     latestMessage: latestMessageObject)
             })
-            print("DEBUG: COMPLETION SUCCESS CALLED GETALLCONVERSATIONS: \(conversations)")
             completion(.success(conversations))
             
         }
@@ -374,7 +369,10 @@ struct ConversationService {
 //        update recipient latest message
         guard let uid = Auth.auth().currentUser?.uid else { return }
         
-        guard let currentUserEmail = UserDefaults.standard.value(forKey: "email") as? String else { return }
+        guard let currentUserEmail = UserDefaults.standard.value(forKey: "email") as? String else {
+            completion(false)
+            return
+        }
         let currentUserSafeEmail = ConversationService.safeEmail(emailAddress: currentUserEmail)
         
         DB_REF.child("\(conversationId)/messages").observeSingleEvent(of: .value) { snapshot, _  in
@@ -446,29 +444,28 @@ struct ConversationService {
                     
                     var position = 0
                     
-                    for conversation in currentUserConversations {
-                        if let currentId = conversation["id"] as? String,
+                    for conversationDictionary in currentUserConversations {
+                        if let currentId = conversationDictionary["id"] as? String,
                            currentId == conversationId {
-                            targetConversation = conversation
-                            
+                            targetConversation = conversationDictionary
                             break
                         }
                         position += 1
-                        targetConversation?["latest_message"] = updatedValue
-                        guard let finalConversation = targetConversation else {
+                    }
+                    
+                    targetConversation?["latest_message"] = updatedValue
+                    guard let finalConversation = targetConversation else {
+                        completion(false)
+                        return
+                    }
+                    currentUserConversations[position] = finalConversation
+                    DB_REF.child("\(currentUserSafeEmail)/conversations").setValue(currentUserConversations) { error, _ in
+                        guard error == nil else {
                             completion(false)
                             return
                         }
-                        currentUserConversations[position] = finalConversation
-                        DB_REF.child("\(currentUserSafeEmail)/conversations").setValue(currentUserConversations) { error, _ in
-                            guard error == nil else {
-                                 completion(false)
-                                return
-                            }
-                            
-                            completion(true)
-                        }
                     }
+                    
                 }
                 
 //                update other user latest message
@@ -488,29 +485,30 @@ struct ConversationService {
                     
                     var position = 0
                     
-                    for conversation in otherUserConversations {
-                        if let currentId = conversation["id"] as? String,
+                    for conversationDictionary in otherUserConversations {
+                        if let currentId = conversationDictionary["id"] as? String,
                            currentId == conversationId {
-                            targetConversation = conversation
-                            
+                            targetConversation = conversationDictionary
                             break
                         }
                         position += 1
-                        targetConversation?["latest_message"] = updatedValue
-                        guard let finalConversation = targetConversation else {
+                    }
+                    
+                    targetConversation?["latest_message"] = updatedValue
+                    guard let finalConversation = targetConversation else {
+                        completion(false)
+                        return
+                    }
+                    otherUserConversations[position] = finalConversation
+                    DB_REF.child("\(otherUserSafeEmail)/conversations").setValue(otherUserConversations) { error, _ in
+                        guard error == nil else {
                             completion(false)
                             return
                         }
-                        otherUserConversations[position] = finalConversation
-                        DB_REF.child("\(otherUserSafeEmail)/conversations").setValue(otherUserConversations) { error, _ in
-                            guard error == nil else {
-                                 completion(false)
-                                return
-                            }
-                            
-                            completion(true)
-                        }
+                        
+                        completion(true)
                     }
+                    
                 }
             }
         }

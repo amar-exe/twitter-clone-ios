@@ -6,11 +6,13 @@
 //
 
 import UIKit
+import ExpandableLabel
 
 protocol ProfileHeaderDelegate: AnyObject {
     func dismissProfilePage()
     func handleProfileHeaderFollow(_ header: ProfileHeader)
     func didSelect(filter: ProfileFilterOptions)
+    func changeHeaderHeight()
 }
 
 class ProfileHeader: UICollectionReusableView {
@@ -79,10 +81,25 @@ class ProfileHeader: UICollectionReusableView {
         return label
     }()
     
-    private let bioLabel: UILabel = {
-        let label = UILabel()
+    public lazy var bioLabel: LabelButon = {
+        let label = LabelButon()
         label.font = UIFont.systemFont(ofSize: 16)
+        label.collapsed = true
+        
+        label.collapsedAttributedLink = NSAttributedString(string: "more", attributes: [.foregroundColor: UIColor.twitterBlue])
+        label.expandedAttributedLink = NSAttributedString(string: "less", attributes: [.foregroundColor: UIColor.twitterBlue])
+        label.ellipsis = NSAttributedString(string: "...", attributes: [.foregroundColor: UIColor.twitterBlue])
         label.numberOfLines = 3
+        label.onClick = {
+            if label.collapsed {
+                label.numberOfLines = 0
+                label.collapsed = false
+            } else {
+                label.numberOfLines = 3
+                label.collapsed = true
+            }
+            self.delegate?.changeHeaderHeight()
+        }
         return label
     }()
     
@@ -178,6 +195,8 @@ class ProfileHeader: UICollectionReusableView {
         
         nameLabel.text = user.name
         usernameLabel.text = viewModel.usernameText
+        
+        bioLabel.text = viewModel.biographyString
          
     }
     
@@ -187,5 +206,26 @@ extension ProfileHeader: ProfileFilterViewDelegate {
     func filterView(_ view: ProfileFilterView, didSelect index: Int) {
         guard let filter = ProfileFilterOptions(rawValue: index) else { return }
         delegate?.didSelect(filter: filter)
+    }
+}
+
+open class LabelButon: ExpandableLabel {
+    var onClick: () -> Void = {}
+    
+    public override init(frame: CGRect) {
+        super.init(frame: frame)
+        isUserInteractionEnabled = true
+    }
+    
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+    }
+    
+    public convenience override init() {
+        self.init(frame: .zero)
+    }
+    
+    open override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        onClick()
     }
 }

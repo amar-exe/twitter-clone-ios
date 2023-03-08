@@ -12,6 +12,18 @@ class FeedController: UICollectionViewController {
     
 //    MARK: Properties
     
+    private lazy var profileImageView: UIImageView = {
+        let iv = UIImageView()
+        iv.setDimensions(width: 32, height: 32)
+        iv.layer.cornerRadius = 32 / 2
+        iv.layer.masksToBounds = true
+        iv.isUserInteractionEnabled = true
+        let configuration = UIImage.SymbolConfiguration(hierarchicalColor: UIColor.darkGray)
+        iv.image = UIImage(systemName: "person.circle.fill", withConfiguration: configuration)
+        return iv
+    }()
+    
+    
     let itemsPerPage: UInt = 3
     var pageNum = 0
     
@@ -19,7 +31,7 @@ class FeedController: UICollectionViewController {
     
     var user: User? {
         didSet {
-            configureLeftBarButton()
+            setImageForLeftBarButtonItem()
         }
     }
     
@@ -40,6 +52,8 @@ class FeedController: UICollectionViewController {
         self.collectionView!.dataSource = self
 
         configureUI()
+        
+        configureLeftBarButton()
         fetchTweets()
         
         configureTableBackgroundView()
@@ -97,9 +111,10 @@ class FeedController: UICollectionViewController {
     }
     
     @objc func handleProfileImageTap() {
-        guard let user = user else { return }
+        guard var selfUser = user else { return }
         
-        let controller = ProfileController(user: user)
+        let controller = ProfileController(user: selfUser)
+        controller.profileControllerDelegate = self
         navigationController?.pushViewController(controller, animated: true)
     }
     
@@ -136,21 +151,25 @@ class FeedController: UICollectionViewController {
         collectionView.refreshControl = refreshControl
     }
     
-    func configureLeftBarButton() {
+    func setImageForLeftBarButtonItem() {
         guard let user = user else { return }
-        
-        let profileImageView = UIImageView()
-        profileImageView.setDimensions(width: 32, height: 32)
-        profileImageView.layer.cornerRadius = 32 / 2
-        profileImageView.layer.masksToBounds = true
-        profileImageView.isUserInteractionEnabled = true
         
         let tap = UITapGestureRecognizer(target: self, action: #selector(handleProfileImageTap))
         profileImageView.addGestureRecognizer(tap)
         
         profileImageView.sd_setImage(with: user.profileImageUrl)
         
+//        navigationItem.leftBarButtonItem = UIBarButtonItem(customView: profileImageView)
+    }
+    
+    func configureLeftBarButton() {
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: profileImageView)
+    }
+}
+
+extension FeedController: ProfileControllerDelegate {
+    func updateUser(withUser user: User) {
+        self.user = user
     }
 }
 
@@ -165,8 +184,6 @@ extension FeedController {
         
         cell.delegate = self
         cell.tweet = tweets[indexPath.row]
-        print("DEBUG: Tweet user: \(tweets[indexPath.row].user)")
-        print("DEBUG: Tweet is: \(tweets[indexPath.row])")
         
         return cell
     }
@@ -189,6 +206,7 @@ extension FeedController {
             TweetService.shared.fetchTweets(startingAfter: lastTweet, limit: itemsPerPage, completion: { tweets in
                 guard tweets.first?.tweetID != self.tweets.last?.tweetID else { return }
                 self.tweets.append(contentsOf: tweets.sorted(by: { $0.timestamp > $1.timestamp }))
+                self.tweets = self.tweets.uniqued()
                 self.checkIfUserLikedTweets()
                 self.collectionView.refreshControl?.endRefreshing()
             })

@@ -18,6 +18,8 @@ class MainTabController: UITabBarController {
     
 //    MARK: Properties
     
+    var conversationsController: ConversationsViewController?
+    
     private var buttonConfig: ActionButtonConfiguration = .tweet
     
     var user: User? {
@@ -48,6 +50,7 @@ class MainTabController: UITabBarController {
         
         self.view.accessibilityIdentifier = "MainTabController"
         
+        fetchUser()
         authUserAndConfigureUI()
         updateTabBarAppearance()
         configureViewControllers()
@@ -72,9 +75,11 @@ class MainTabController: UITabBarController {
                 self.present(vc, animated: true)
             }
         } else {
-            configureViewControllers()
-            configureUI()
-            fetchUser() 
+            DispatchQueue.main.async {
+                self.fetchUser()
+                self.configureViewControllers()
+                self.configureUI()
+            }
         }
     }
     
@@ -115,10 +120,15 @@ class MainTabController: UITabBarController {
         let nav2 = templateNavigationController(image: UIImage(named: "search_unselected"), rootViewController: explore)
         let notifications = NotificationsController()
         let nav3 = templateNavigationController(image: UIImage(named: "like_unselected"), rootViewController: notifications)
-        let conversations = ConversationsViewController()
-        let nav4 = templateNavigationController(image: UIImage(named: "ic_mail_outline_white_2x-1"), rootViewController: conversations)
+//        let conversations = ConversationsViewController()
+        conversationsController = ConversationsViewController()
+        let nav4 = templateNavigationController(image: UIImage(named: "ic_mail_outline_white_2x-1"), rootViewController: conversationsController!)
         
         viewControllers = [nav1, nav2, nav3, nav4]
+    }
+    
+    func getConversations() -> [Conversation]? {
+        return conversationsController?.conversations
     }
     
     func templateNavigationController(image: UIImage?, rootViewController: UIViewController) -> UINavigationController {

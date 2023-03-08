@@ -7,12 +7,19 @@
 
 import UIKit
 import JGProgressHUD
+import SnapKit
 
 class ConversationsViewController: UIViewController {
     
+    private var backgroundView: UIView!
+    
     private let spinner = JGProgressHUD(style: .dark)
     
-    private var conversations = [Conversation]()
+    public var conversations = [Conversation]() {
+        didSet {
+            backgroundView.isHidden = !conversations.isEmpty
+        }
+    }
     
     private let tableView: UITableView = {
         let table = UITableView()
@@ -37,10 +44,10 @@ class ConversationsViewController: UIViewController {
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .compose,
                                                             target: self,
                                                             action: #selector(didTapComposeButton))
-
         configureUI()
         configureTableView()
         configureNoConversationsLabel()
+        tableView.backgroundView = backgroundView
         fetchConversations()
         startListeningForConversations()
     }
@@ -48,6 +55,7 @@ class ConversationsViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         tableView.frame = view.bounds
+        noConversationsLabel.center = view.center
     }
     
 //    MARK: Selectors
@@ -97,7 +105,31 @@ class ConversationsViewController: UIViewController {
     }
     
     private func configureNoConversationsLabel() {
-        view.addSubview(noConversationsLabel)
+        backgroundView = UIView(frame: tableView.bounds)
+        backgroundView.backgroundColor = .white // set the background color
+        let imageView = UIImageView()
+        imageView.image = UIImage(named: "sad-bird")
+        let messageLabel = UILabel()
+        messageLabel.numberOfLines = 2
+        messageLabel.text = "No messages yet. Try sending one!" // set the message to display
+        messageLabel.font = UIFont.systemFont(ofSize: 17, weight: .semibold)
+        messageLabel.textColor = .lightGray
+        messageLabel.textAlignment = .center
+        backgroundView.addSubview(imageView)
+        imageView.snp.makeConstraints { make in
+            make.top.equalTo(backgroundView.safeAreaLayoutGuide.snp.top).offset(200)
+            make.leading.equalToSuperview().offset(96)
+            make.trailing.equalToSuperview().offset(-96)
+//            make.leading.trailing.equalToSuperview()
+            make.bottom.equalToSuperview().offset(-300)
+        }
+        backgroundView.addSubview(messageLabel)
+        messageLabel.snp.makeConstraints { make in
+            make.top.equalTo(imageView.snp.bottom).offset(20)
+            make.leading.equalToSuperview()
+            make.trailing.equalToSuperview()
+//            make.bottom.equalToSuperview()
+        }
     }
     
     private func fetchConversations() {
@@ -120,7 +152,6 @@ extension ConversationsViewController: UITableViewDelegate, UITableViewDataSourc
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         let model = conversations[indexPath.row]
-        print("DEBUG: model from conversations with conversation id: \(model.id), \n model name: \(model.name), \n model other user id: \(model.otherUserUid), \n model latest message: \(model.latestMessage)")
         UserService.shared.fetchUser(uid: model.otherUserUid) { [weak self] user in
             DispatchQueue.main.async {
                 let vc = ChatViewController(withUser: user, id: model.id)

@@ -158,14 +158,44 @@ class RegisterController: UIViewController {
         let alertAction = UIAlertAction(title: "Ok", style: .default) { _ in
             self.dismiss(animated: true)
             
-            guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
-            }) else { return }
+            do {
+                try Auth.auth().signOut()
+            } catch let error {
+                print("failed to signout with error \(error.localizedDescription)")
+            }
             
-            guard let tab = window.rootViewController as? MainTabController else { return }
+            AuthService.shared.logUserIn(withEmail: email, password: password) { result, error in
+                if let error = error {
+                    self.presentUIAlertController(withMessage: error.localizedDescription)
+                    return
+                }
+                
+                UserService.shared.fetchCurrentUser { user in
+                    UserDefaults.standard.set(user.name, forKey: "name")
+                }
+                UserDefaults.standard.set(email, forKey: "email")
+                
+                
+                guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+                }) else { return }
+                
+                guard let tab = window.rootViewController as? MainTabController else { return }
+                
+                tab.authUserAndConfigureUI()
+                
+                self.dismiss(animated: true) {
+                    self.dismiss(animated: true)
+                }
+            }
             
-            tab.authUserAndConfigureUI()
-            
-            self.dismiss(animated: true)
+//            guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+//            }) else { return }
+//
+//            guard let tab = window.rootViewController as? MainTabController else { return }
+//
+//            tab.authUserAndConfigureUI()
+//
+//            self.dismiss(animated: true)
         }
         alert.addAction(alertAction)
         present(alert, animated: true)

@@ -62,6 +62,7 @@ class ChatViewController: MessagesViewController {
         return formatter
     }()
     
+    public var selfUser: User!
     public let otherUser: User
     public var isNewConversation = false
     private var conversationId: String?
@@ -84,6 +85,9 @@ class ChatViewController: MessagesViewController {
         self.otherUser = user
         self.conversationId = id
         super.init(nibName: nil, bundle: nil)
+        UserService.shared.fetchCurrentUser { [weak self] user in
+            self?.selfUser = user
+        }
     }
     
     required init?(coder: NSCoder) {
@@ -170,9 +174,6 @@ extension ChatViewController: InputBarAccessoryViewDelegate {
         let selfSender = self.selfSender,
         let messageId = createMessageId() else { return }
         
-        print("DEBUG: Sending message: \(text)")
-        
-        
         let message = Message(sender: selfSender,
                               messageId: messageId,
                               sentDate: Date(),
@@ -237,6 +238,17 @@ extension ChatViewController: MessagesDataSource, MessagesLayoutDelegate, Messag
     func numberOfSections(in messagesCollectionView: MessageKit.MessagesCollectionView) -> Int {
         return messages.count
     }
+}
+
+extension ChatViewController {
     
-    
+    func configureAvatarView(_ avatarView: AvatarView, for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) {
+        let sender = message.sender
+        if sender.senderId == selfSender?.senderId {
+            avatarView.sd_setImage(with: selfUser.profileImageUrl)
+        }
+        else {
+            avatarView.sd_setImage(with: otherUser.profileImageUrl)
+        }
+    }
 }

@@ -25,15 +25,14 @@ class SearchController: UITableViewController {
     
     private var users = [User]() {
         didSet {
-            backgroundView.isHidden = !users.isEmpty
-            tableView.reloadData()
+            backgroundView.isHidden = !filteredUsers.isEmpty || !users.isEmpty
         }
     }
     
     private var filteredUsers = [User]() {
         didSet {
             tableView.reloadData()
-            backgroundView.isHidden = !filteredUsers.isEmpty
+            backgroundView.isHidden = !filteredUsers.isEmpty || !users.isEmpty && !inSearchMode
         }
     }
     
@@ -58,7 +57,7 @@ class SearchController: UITableViewController {
         super.viewDidLoad()
         
         configureUI()
-        config == .userSearch ? fetchCurrentUser() : fetchFirstBatch()
+        fetchCurrentUser()
         configureSearchController()
         configureTableBackgroundView()
         configureRefreshControl()
@@ -70,31 +69,16 @@ class SearchController: UITableViewController {
         super.viewWillAppear(animated)
         navigationController?.navigationBar.barStyle = .default
         navigationController?.navigationBar.isHidden = false
+        navigationItem.title = config == .messages ? "New Message" : "Explore"
     }
     
     //    MARK: API
     
-    func fetchFirstBatch() {
-//        UserService.shared.fetchCurrentUser { [self] currentUser in
-//            UserService.shared.fetchUsers(pageSize: pageSize) { [weak self] users in
-//                users.forEach { user in
-//                    if user.uid != currentUser.uid {
-//                        self?.users.append(user)
-//                    }
-//                }
-//            }
-//        }
-        
-        UserService.shared.fetchUsers { users in
-            self.users = users.uniqued()
-        }
-        
-    }
-    
     func fetchCurrentUser() {
         UserService.shared.fetchCurrentUser { [weak self] user in
             self?.users.append(user)
-            print("DEBUG: Current user in search controller \(user)")
+            self?.tableView.reloadData()
+            self?.tableView.tableFooterView = nil
         }
     }
     
@@ -103,9 +87,18 @@ class SearchController: UITableViewController {
             return
         }
         UserService.shared.fetchUsers(startingAt: lastUser, pageSize: pageSize) { [weak self] users in
-            self?.users.append(contentsOf: users)
-            self?.checkForDuplicates()
-            self?.tableView.tableFooterView = nil
+//            if lastUser.uid != users.first?.uid {
+                self?.tableView.tableFooterView = self?.createSpinnerFooter()
+                self?.users.append(contentsOf: users)
+                let noDuplicates = self?.users.uniqued()
+//                if noDuplicates?.count != self?.users.count {
+                    self?.users = noDuplicates ?? users
+                    self?.tableView.tableFooterView = nil
+                    DispatchQueue.main.async {
+                        self?.tableView.reloadData()
+                    }
+//                }
+//            }
         }
 //        UserService.shared.fetchUsers { users in
 //            self.users = users
@@ -156,7 +149,7 @@ class SearchController: UITableViewController {
         navigationItem.title = config == .messages ? "New Message" : "Explore"
         
         tableView.register(UserCell.self, forCellReuseIdentifier: UserCell.reuseIdentifier)
-        tableView.rowHeight = 50
+        tableView.register(SelfUserCell.self, forCellReuseIdentifier: SelfUserCell.reuseIdentifier)
         tableView.separatorStyle = .none
         
         if config == .messages {
@@ -176,40 +169,73 @@ class SearchController: UITableViewController {
 }
 
 extension SearchController {
+    
+    override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+        if indexPath.row == 0 && !inSearchMode {
+            return 80
+        }
+        return 50
+    }
+    
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return inSearchMode ? filteredUsers.count : users.count
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: UserCell.reuseIdentifier, for: indexPath) as! UserCell
         
-        if indexPath.row == 0 && config == .userSearch{
-            UserService.shared.fetchCurrentUser { user in
-                cell.user = user
-                
-            }
+        if indexPath.row == 0 && !inSearchMode {
+            let cell = tableView.dequeueReusableCell(withIdentifier: SelfUserCell.reuseIdentifier, for: indexPath) as! SelfUserCell
+            cell.user = users[0]
             return cell
         }
         
+        let cell = tableView.dequeueReusableCell(withIdentifier: UserCell.reuseIdentifier, for: indexPath) as! UserCell
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
-        
         cell.user = user
+        
         return cell
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        tableView.deselectRow(at: indexPath, animated: true)
+        if indexPath.row == 0 && config == .messages && !inSearchMode {
+            return
+        }
         let user = inSearchMode ? filteredUsers[indexPath.row] : users[indexPath.row]
+        users.append(user)
+        self.users = self.users.uniqued()
         let vc = config == .messages ? createNewConversation(withUser: user) : ProfileController(user: user)
         navigationController?.pushViewController(vc, animated: true)
         
     }
     
     func createNewConversation(withUser user: User) -> ChatViewController {
-        let vc = ChatViewController(withUser: user, id: nil)
+        var vc = ChatViewController(withUser: user, id: nil)
         vc.isNewConversation = true
         vc.title = user.name
+        let (isNewConvo, convo) = isNewConversationTest(withUser: user)
+        if !isNewConvo && convo != nil {
+            vc.isNewConversation = false
+            vc = ChatViewController(withUser: user, id: convo?.id)
+            vc.title = convo?.name
+        }
         vc.navigationItem.largeTitleDisplayMode = .never
         return vc
+    }
+    
+    func isNewConversationTest(withUser user: User) -> (Bool, Conversation?) {
+        guard let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow
+        }) else { return (true, nil) }
+        
+        guard let tab = window.rootViewController as? MainTabController else { return (true, nil) }
+        guard let conversationsArray = tab.getConversations() else { return (true, nil) }
+        
+        for conversation in conversationsArray {
+            if conversation.otherUserUid == user.uid {
+                return (false, conversation)
+            }
+        }
+        return (true, nil)
     }
 }
 
@@ -218,6 +244,15 @@ extension SearchController: UISearchResultsUpdating {
         guard let searchText = searchController.searchBar.text?.lowercased().replacingOccurrences(of: " ", with: "") else { return }
         
         filteredUsers = users.filter({ $0.username.contains(searchText) })
+        
+        if filteredUsers.isEmpty {
+            tableView.tableFooterView = createSpinnerFooter()
+            backgroundView.isHidden = true
+            UserService.shared.fetchUser(byUsernameString: searchText) { users in
+                self.tableView.tableFooterView = nil
+                self.filteredUsers = users
+            }
+        }
         
     }
 }
@@ -239,15 +274,8 @@ extension SearchController {
 
         if position > (tableView.contentSize.height - 100 - scrollView.frame.size.height) {
             guard !UserService.shared.isPaginating else { return }
-            self.tableView.tableFooterView = createSpinnerFooter()
             fetchUsers()
+            self.tableView.tableFooterView = nil
         }
-    }
-}
-
-extension Sequence where Element: Hashable {
-    func uniqued() -> [Element] {
-        var set = Set<Element>()
-        return filter { set.insert($0).inserted }
     }
 }

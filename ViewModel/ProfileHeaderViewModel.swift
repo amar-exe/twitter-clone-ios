@@ -51,6 +51,10 @@ struct ProfileHeaderViewModel {
         return "Loading"
     }
     
+    var biographyString: String {
+        return user.bio ?? ""
+    }
+    
     init(user: User) {
         self.user = user
         self.usernameText = "@" + user.username

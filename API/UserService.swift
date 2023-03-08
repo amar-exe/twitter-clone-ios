@@ -122,16 +122,23 @@ class UserService {
         var users = [User]()
         let query = REF_USERS.queryOrderedByKey().queryStarting(atValue: startUser.uid).queryLimited(toFirst: UInt(pageSize))
         query.observeSingleEvent(of: .value) { snapshot in
-            guard let children = snapshot.children.allObjects as? [DataSnapshot] else {
+            guard var children = snapshot.children.allObjects as? [DataSnapshot] else {
                 completion([])
                 return
             }
+
+            children = children.uniqued()
+
             for child in children {
                 let uid = child.key
+
                 guard let dict = child.value as? [String: AnyObject] else { continue }
-                let user = User(uid: uid, dictionary: dict)
-                users.append(user)
+                if uid != startUser.uid {
+                    let user = User(uid: uid, dictionary: dict)
+                    users.append(user)
+                }
             }
+            users = users.uniqued()
             completion(users)
         }
     }
@@ -163,20 +170,23 @@ class UserService {
             REF_USERS.observeSingleEvent(of: .value) { snapshot in
                 let uid = snapshot.key
                 guard let dict = snapshot.value as? [String : AnyObject] else { return }
-                let user = User(uid: uid, dictionary: dict)
-                users.append(user)
-                
+                if uid != users.last?.uid {
+                    let user = User(uid: uid, dictionary: dict)
+                    users.append(user)
+                }
                 if users.count == snapshot.childrenCount {
                     // reached end of data
+                    users = users.uniqued()
                     completion(users)
                     return
                 }
                 
                 if users.count == pageSize {
+                    users = users.uniqued()
                     completion(users)
                     return
                 }
-                
+                users = users.uniqued()
                 completion(users)
                 self.isPaginating = false
             }
@@ -202,6 +212,32 @@ class UserService {
 //
 //                }
 //            }
+        }
+    }
+    
+    func fetchUser(byUsernameString username: String, completion: @escaping([User]) -> Void) {
+        var users = [User]()
+        
+//        let query = REF_USERS.queryOrdered(byChild: "username").queryEqual(toValue: username)
+        let query = REF_USERS.queryOrdered(byChild: "username").queryStarting(atValue: username).queryEnding(atValue: username + "\u{f8ff}")
+        query.observeSingleEvent(of: .value) { snapshot, _  in
+            guard var children = snapshot.children.allObjects as? [DataSnapshot] else {
+                completion([])
+                return
+            }
+            
+            for child in children {
+                let uid = child.key
+                
+                guard let dict = child.value as? [String: AnyObject] else { continue }
+                
+                let user = User(uid: uid, dictionary: dict)
+                users.append(user)
+            }
+            users = users.uniqued()
+            completion(users)
+            
+            
         }
     }
 

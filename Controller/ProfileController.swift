@@ -7,10 +7,25 @@
 
 import UIKit
 import Firebase
+import ExpandableLabel
+
+protocol ProfileControllerDelegate: AnyObject {
+    func updateUser(withUser user: User)
+}
 
 class ProfileController: UICollectionViewController {
     
 //    MARK: Properties
+    
+    var headerHeight: CGFloat = 300 {
+        didSet {
+            collectionView.collectionViewLayout.invalidateLayout()
+        }
+    }
+    
+    weak var profileControllerDelegate: ProfileControllerDelegate?
+    
+    var maxBioLabelLines: Int = 3
     
     private var user: User
     
@@ -70,7 +85,16 @@ class ProfileController: UICollectionViewController {
             self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
             self.checkIfUserLikedTweets()
             self.collectionView.reloadData()
-        }
+                }
+        
+//        TweetService.shared.fetchTweets(forUser: user, limit: UInt(3)) { tweets in
+//            self.tweets = tweets.sorted(by: { $0.timestamp > $1.timestamp })
+////            self.tweets = self.tweets.uniqued()
+//            self.checkIfUserLikedTweets()
+//            DispatchQueue.main.async {
+//                self.collectionView.reloadData()
+//            }
+//        }
     }
     
     func fetchReplies() {
@@ -123,6 +147,8 @@ extension ProfileController {
         let header = collectionView.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: ProfileHeader.reuseIdentifier, for: indexPath) as! ProfileHeader
         header.user = user
         header.delegate = self
+        maxBioLabelLines = header.bioLabel.calculateMaxLines()
+        header.isUserInteractionEnabled = true
         return header
     }
     
@@ -149,13 +175,29 @@ extension ProfileController: UICollectionViewDelegateFlowLayout {
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
         
-        var height: CGFloat = 300
-        
-        if user.bio != nil {
-            height += 50
+        if let headerView = collectionView.visibleSupplementaryViews(ofKind: UICollectionView.elementKindSectionHeader).first as? ProfileHeader {
+            
+            if user.bio != nil {
+                headerHeight += user.bio?.height(withConstrainedWidth: view.frame.width - 40, font: .systemFont(ofSize: 16)) ?? 50
+                maxBioLabelLines = headerView.bioLabel.numberOfLines
+                if headerHeight >= 360 && maxBioLabelLines != 0 {
+                    headerHeight = 360
+                }
+            }
+            
+            // Layout to get the right dimensions
+            headerView.layoutIfNeeded()
+            return CGSize(width: view.frame.width, height: headerHeight)
         }
         
-        return CGSize(width: view.frame.width, height: height)
+        if user.bio != nil {
+            headerHeight += user.bio?.height(withConstrainedWidth: view.frame.width - 40, font: .systemFont(ofSize: 16)) ?? 50
+            if headerHeight >= 360 && maxBioLabelLines != 0 {
+                headerHeight = 360
+            }
+        }
+        
+        return CGSize(width: view.frame.width, height: headerHeight)
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
@@ -172,6 +214,10 @@ extension ProfileController: UICollectionViewDelegateFlowLayout {
 }
 
 extension ProfileController: ProfileHeaderDelegate {
+    func changeHeaderHeight() {
+        headerHeight += 1
+    }
+    
     func didSelect(filter: ProfileFilterOptions) {
         self.selectedFilter = filter
     }
@@ -226,6 +272,7 @@ extension ProfileController: EditProfileControllerDelegate {
         controller.dismiss(animated: true)
         self.user = user
         self.collectionView.reloadData()
+        self.profileControllerDelegate?.updateUser(withUser: user)
     }
 }
 
@@ -301,6 +348,4 @@ extension ProfileController: TweetCellDelegate {
                                                           tweetID: tweet.tweetID)
         }
     }
-    
-    
 }
