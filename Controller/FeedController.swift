@@ -111,9 +111,10 @@ class FeedController: UICollectionViewController {
     }
     
     @objc func handleProfileImageTap() {
-        guard let user = user else { return }
+        guard var selfUser = user else { return }
         
-        let controller = ProfileController(user: user)
+        let controller = ProfileController(user: selfUser)
+        controller.profileControllerDelegate = self
         navigationController?.pushViewController(controller, animated: true)
     }
     
@@ -163,6 +164,12 @@ class FeedController: UICollectionViewController {
     
     func configureLeftBarButton() {
         navigationItem.leftBarButtonItem = UIBarButtonItem(customView: profileImageView)
+    }
+}
+
+extension FeedController: ProfileControllerDelegate {
+    func updateUser(withUser user: User) {
+        self.user = user
     }
 }
 
